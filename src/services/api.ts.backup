@@ -1,0 +1,548 @@
+import { supabase } from './supabase';
+import { googleCalendarService } from './googleCalendar';
+import type { 
+  Funcionario, 
+  Servico, 
+  MovimentacaoFinanceira, 
+  FormularioEntrada as FormEntrada,
+  FormularioSaida as FormSaida,
+  EstatisticasDashboard 
+} from '../types'
+
+// ===== FUNCIONÁRIOS =====
+export const funcionarioService = {
+  async getAll(): Promise<Funcionario[]> {
+    const { data, error } = await supabase
+      .from('funcionarios')
+      .select('*')
+      .eq('ativo', true)
+      .order('nome')
+    
+    if (error) throw error
+    return data || []
+  },  async getById(id: string): Promise<Funcionario | null> {
+    if (USE_LOCAL_DATA) {
+      return funcionarioServiceLocal.getById(id)
+    }
+
+    const { data, error } = await supabase
+      .from('funcionarios')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async create(funcionario: Omit<Funcionario, 'id' | 'created_at' | 'updated_at'>): Promise<Funcionario> {
+    const { data, error } = await supabase
+      .from('funcionarios')
+      .insert([funcionario])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },  async update(id: string, updates: Partial<Funcionario>): Promise<Funcionario> {
+    if (USE_LOCAL_DATA) {
+      return funcionarioServiceLocal.update(id, updates)
+    }
+
+    const { data, error } = await supabase
+      .from('funcionarios')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async deactivate(id: string): Promise<void> {
+    if (USE_LOCAL_DATA) {
+      return funcionarioServiceLocal.deactivate(id)
+    }
+
+    const { error } = await supabase
+      .from('funcionarios')
+      .update({ ativo: false, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    
+    if (error) throw error
+  },
+
+  // Buscar funcionários com performance
+  async getAllWithPerformance(): Promise<Funcionario[]> {
+    if (USE_LOCAL_DATA) {
+      return funcionarioServiceLocal.getAll()
+    }
+
+    // Buscar funcionários
+    const { data: funcionarios, error: errorFuncionarios } = await supabase
+      .from('funcionarios')
+      .select('*')
+      .eq('ativo', true)
+      .order('nome')
+    
+    if (errorFuncionarios) throw errorFuncionarios
+
+    // Buscar performance usando a view
+    const { data: performance, error: errorPerformance } = await supabase
+      .from('vw_performance_funcionarios')
+      .select('*')
+    
+    if (errorPerformance) throw errorPerformance
+
+    // Combinar dados
+    return funcionarios?.map(funcionario => {
+      const perf = performance?.find(p => p.id === funcionario.id)
+      return {
+        ...funcionario,
+        faturamento_total: perf?.faturamento_total || 0,
+        servicos_realizados: perf?.servicos_realizados || 0,
+        ticket_medio: perf?.ticket_medio || 0
+      }
+    }) || []
+  }
+}
+
+// ===== SERVIÇOS =====
+export const servicoService = {
+  async getAll(): Promise<Servico[]> {
+    if (USE_LOCAL_DATA) {
+      return servicoServiceLocal.getAll()
+    }
+
+    const { data, error } = await supabase
+      .from('servicos')
+      .select(`
+        *,
+        funcionario:funcionarios(*)
+      `)
+      .eq('ativo', true)
+      .order('nome')
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async create(servico: Omit<Servico, 'id' | 'created_at' | 'updated_at' | 'funcionario'>): Promise<Servico> {
+    if (USE_LOCAL_DATA) {
+      return servicoServiceLocal.create(servico)
+    }
+
+    const { data, error } = await supabase
+      .from('servicos')
+      .insert([servico])
+      .select(`
+        *,
+        funcionario:funcionarios(*)
+      `)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async update(id: string, updates: Partial<Servico>): Promise<Servico> {
+    if (USE_LOCAL_DATA) {
+      return servicoServiceLocal.update(id, updates)
+    }
+
+    const { data, error } = await supabase
+      .from('servicos')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select(`
+        *,
+        funcionario:funcionarios(*)
+      `)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async deactivate(id: string): Promise<void> {
+    if (USE_LOCAL_DATA) {
+      return servicoServiceLocal.deactivate(id)
+    }
+
+    const { error } = await supabase
+      .from('servicos')
+      .update({ ativo: false, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    
+    if (error) throw error
+  }
+}
+
+// ===== MOVIMENTAÇÕES FINANCEIRAS =====
+export const financeiroService = {
+  async getMovimentacoes(limite?: number): Promise<MovimentacaoFinanceira[]> {
+    if (USE_LOCAL_DATA) {
+      return financeiroServiceLocal.getMovimentacoes(limite)
+    }
+
+    const query = supabase
+      .from('movimentacoes_financeiras')
+      .select(`
+        *,
+        funcionario:funcionarios(*),
+        servico:servicos(*)
+      `)
+      .order('data_movimentacao', { ascending: false })
+    
+    if (limite) {
+      query.limit(limite)
+    }
+    
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  },
+
+  async criarEntrada(entrada: FormEntrada): Promise<MovimentacaoFinanceira> {
+    if (USE_LOCAL_DATA) {
+      return financeiroServiceLocal.criarEntrada(entrada)
+    }
+
+    const movimentacao = {
+      tipo: 'ENTRADA' as const,
+      valor: entrada.valor,
+      descricao: `Serviço para ${entrada.cliente_nome}`,
+      metodo_pagamento: entrada.metodo_pagamento,
+      funcionario_id: entrada.funcionario_id,
+      servico_id: entrada.servico_id,
+      cliente_nome: entrada.cliente_nome,
+      data_movimentacao: entrada.data_movimentacao || new Date().toISOString()
+    }
+
+    const { data, error } = await supabase
+      .from('movimentacoes_financeiras')
+      .insert([movimentacao])
+      .select(`
+        *,
+        funcionario:funcionarios(*),
+        servico:servicos(*)
+      `)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async criarSaida(saida: FormSaida): Promise<MovimentacaoFinanceira> {
+    if (USE_LOCAL_DATA) {
+      return financeiroServiceLocal.criarSaida(saida)
+    }
+
+    const movimentacao = {
+      tipo: 'SAIDA' as const,
+      valor: saida.valor,
+      descricao: `${saida.tipo_saida}: ${saida.descricao}`,
+      data_movimentacao: saida.data_movimentacao || new Date().toISOString()
+    }
+
+    const { data, error } = await supabase
+      .from('movimentacoes_financeiras')
+      .insert([movimentacao])
+      .select(`
+        *,
+        funcionario:funcionarios(*),
+        servico:servicos(*)
+      `)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async update(id: string, updates: Partial<MovimentacaoFinanceira>): Promise<MovimentacaoFinanceira> {
+    if (USE_LOCAL_DATA) {
+      return financeiroServiceLocal.update(id, updates)
+    }
+
+    const { data, error } = await supabase
+      .from('movimentacoes_financeiras')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select(`
+        *,
+        funcionario:funcionarios(*),
+        servico:servicos(*)
+      `)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async delete(id: string): Promise<void> {
+    if (USE_LOCAL_DATA) {
+      return financeiroServiceLocal.delete(id)
+    }
+
+    const { error } = await supabase
+      .from('movimentacoes_financeiras')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  },
+
+  async getEstatisticas(dias: number = 7): Promise<EstatisticasDashboard> {
+    if (USE_LOCAL_DATA) {
+      return financeiroServiceLocal.getEstatisticas(dias)
+    }
+
+    const dataInicio = new Date()
+    dataInicio.setDate(dataInicio.getDate() - dias)
+    
+    const dataInicioAnterior = new Date()
+    dataInicioAnterior.setDate(dataInicioAnterior.getDate() - (dias * 2))
+    
+    // Período atual
+    const { data: movimentacoesAtuais, error: errorAtual } = await supabase
+      .from('movimentacoes_financeiras')
+      .select('tipo, valor')
+      .gte('data_movimentacao', dataInicio.toISOString())
+    
+    if (errorAtual) throw errorAtual
+
+    // Período anterior (para comparação)
+    const { data: movimentacoesAnteriores, error: errorAnterior } = await supabase
+      .from('movimentacoes_financeiras')
+      .select('tipo, valor')
+      .gte('data_movimentacao', dataInicioAnterior.toISOString())
+      .lt('data_movimentacao', dataInicio.toISOString())
+    
+    if (errorAnterior) throw errorAnterior
+
+    // Calcular totais atuais
+    const entradasAtuais = movimentacoesAtuais?.filter(m => m.tipo === 'ENTRADA').reduce((sum, m) => sum + m.valor, 0) || 0
+    const saidasAtuais = movimentacoesAtuais?.filter(m => m.tipo === 'SAIDA').reduce((sum, m) => sum + m.valor, 0) || 0
+    const faturamentoAtual = entradasAtuais
+    const saldoAtual = entradasAtuais - saidasAtuais
+
+    // Calcular totais anteriores
+    const entradasAnteriores = movimentacoesAnteriores?.filter(m => m.tipo === 'ENTRADA').reduce((sum, m) => sum + m.valor, 0) || 0
+    const saidasAnteriores = movimentacoesAnteriores?.filter(m => m.tipo === 'SAIDA').reduce((sum, m) => sum + m.valor, 0) || 0
+    const faturamentoAnterior = entradasAnteriores
+    const saldoAnterior = entradasAnteriores - saidasAnteriores
+
+    // Calcular variações
+    const calcularVariacao = (atual: number, anterior: number) => {
+      if (anterior === 0) return atual > 0 ? 100 : 0
+      return ((atual - anterior) / anterior) * 100
+    }
+
+    return {
+      faturamento_total: faturamentoAtual,
+      entradas_total: entradasAtuais,
+      saidas_total: saidasAtuais,
+      saldo_caixa: saldoAtual,
+      variacao_faturamento: calcularVariacao(faturamentoAtual, faturamentoAnterior),
+      variacao_entradas: calcularVariacao(entradasAtuais, entradasAnteriores),
+      variacao_saidas: calcularVariacao(saidasAtuais, saidasAnteriores),
+      variacao_saldo: calcularVariacao(saldoAtual, saldoAnterior)
+    }
+  }
+}
+
+// ===== AGENDAMENTOS =====
+export const agendamentoService = {
+  async getAll(): Promise<any[]> {
+    if (USE_LOCAL_DATA) {
+      // Mock data para desenvolvimento local - vamos adicionar alguns dados de exemplo
+      const hoje = new Date();
+      const amanha = new Date(hoje);
+      amanha.setDate(hoje.getDate() + 1);
+      
+      return [
+        {
+          id: '1',
+          cliente_nome: 'Maria Teste',
+          data_agendamento: amanha.toISOString().split('T')[0],
+          horario: '09:00',
+          status: 'CONFIRMADO',
+          funcionario: { nome: 'Ana', sobrenome: 'Silva' },
+          servico: { nome: 'Corte e Escova' }
+        }
+      ];
+    }
+
+    const { data, error } = await supabase
+      .from('agendamentos')
+      .select(`
+        *,
+        funcionario:funcionarios(*),
+        servico:servicos(*)
+      `)
+      .order('data_agendamento', { ascending: true })
+      .order('horario', { ascending: true })
+    
+    if (error) {
+      console.error('Erro ao buscar agendamentos:', error);
+      throw error;
+    }
+    
+    return data || []
+  },
+
+  async getByDate(dataInicio: string, dataFim: string): Promise<any[]> {
+    if (USE_LOCAL_DATA) {
+      return []
+    }
+
+    const { data, error } = await supabase
+      .from('agendamentos')
+      .select(`
+        *,
+        funcionario:funcionarios(*),
+        servico:servicos(*)
+      `)
+      .gte('data_agendamento', dataInicio)
+      .lte('data_agendamento', dataFim)
+      .order('data_agendamento', { ascending: true })
+      .order('horario', { ascending: true })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async create(agendamento: any): Promise<any> {
+    if (USE_LOCAL_DATA) {
+      return { id: Date.now().toString(), ...agendamento }
+    }
+
+    const { data, error } = await supabase
+      .from('agendamentos')
+      .insert([agendamento])
+      .select(`
+        *,
+        funcionario:funcionarios(*),
+        servico:servicos(*)
+      `)
+      .single()
+    
+    if (error) throw error
+
+    // Tentar criar evento no Google Calendar
+    try {
+      if (googleCalendarService.isConnected()) {
+        const eventId = await googleCalendarService.createEvent(
+          data,
+          data.funcionario,
+          data.servico
+        );
+        
+        if (eventId) {
+          // Atualizar o agendamento com o ID do evento do Google Calendar
+          const { error: updateError } = await supabase
+            .from('agendamentos')
+            .update({ google_calendar_event_id: eventId })
+            .eq('id', data.id);
+          
+          if (!updateError) {
+            data.google_calendar_event_id = eventId;
+          }
+        }
+      }
+    } catch (calendarError) {
+      console.warn('Falha ao criar evento no Google Calendar:', calendarError);
+      // Não falhar o agendamento por causa do Google Calendar
+    }
+    
+    return data
+  },
+
+  async update(id: string, updates: any): Promise<any> {
+    if (USE_LOCAL_DATA) {
+      return { id, ...updates }
+    }
+
+    // Buscar agendamento atual para pegar o google_calendar_event_id
+    const { data: currentData, error: fetchError } = await supabase
+      .from('agendamentos')
+      .select(`
+        *,
+        funcionario:funcionarios(*),
+        servico:servicos(*)
+      `)
+      .eq('id', id)
+      .single();
+    
+    if (fetchError) throw fetchError;
+
+    const { data, error } = await supabase
+      .from('agendamentos')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select(`
+        *,
+        funcionario:funcionarios(*),
+        servico:servicos(*)
+      `)
+      .single()
+    
+    if (error) throw error
+
+    // Tentar atualizar evento no Google Calendar
+    try {
+      if (googleCalendarService.isConnected() && currentData.google_calendar_event_id) {
+        await googleCalendarService.updateEvent(
+          currentData.google_calendar_event_id,
+          data,
+          data.funcionario,
+          data.servico
+        );
+      }
+    } catch (calendarError) {
+      console.warn('Falha ao atualizar evento no Google Calendar:', calendarError);
+      // Não falhar a atualização por causa do Google Calendar
+    }
+    
+    return data
+  },
+
+  async delete(id: string): Promise<void> {
+    if (USE_LOCAL_DATA) {
+      return
+    }
+
+    // Buscar agendamento para pegar o google_calendar_event_id antes de deletar
+    const { data: agendamento, error: fetchError } = await supabase
+      .from('agendamentos')
+      .select('google_calendar_event_id')
+      .eq('id', id)
+      .single();
+    
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      throw fetchError;
+    }
+
+    const { error } = await supabase
+      .from('agendamentos')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+
+    // Tentar deletar evento do Google Calendar
+    try {
+      if (googleCalendarService.isConnected() && agendamento?.google_calendar_event_id) {
+        await googleCalendarService.deleteEvent(agendamento.google_calendar_event_id);
+      }
+    } catch (calendarError) {
+      console.warn('Falha ao deletar evento do Google Calendar:', calendarError);
+      // Não falhar a deleção por causa do Google Calendar
+    }
+  },
+
+  async updateStatus(id: string, status: string): Promise<any> {
+    return this.update(id, { status })
+  }
+}
