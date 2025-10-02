@@ -122,8 +122,25 @@ export const ServicoFormModal: React.FC<ServicoFormModalProps> = ({
       };
       
       await onSave(dadosServico);
+      
+      // Resetar formulário após sucesso
+      setFormData({
+        nome: '',
+        valor_base: 0,
+        funcionario_responsavel_id: '',
+        ativo: true,
+        descricao: ''
+      });
+      
     } catch (error) {
       console.error('Erro ao salvar serviço:', error);
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Não foi possível salvar o serviço. Tente novamente.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }

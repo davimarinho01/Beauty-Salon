@@ -28,7 +28,7 @@ import {
   Progress,
   useColorModeValue
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, ViewIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon, ViewIcon, DeleteIcon } from '@chakra-ui/icons';
 import { servicoService, funcionarioService, financeiroService } from '../services/api';
 import { ServicoFormModal } from '../components/modals/ServicoFormModal';
 import { ServicoDetailModal } from '../components/modals/ServicoDetailModal';
@@ -91,7 +91,7 @@ export const Servicos: React.FC = () => {
       
       // Carregar serviços e funcionários em paralelo
       const [servicosData, funcionariosData] = await Promise.all([
-        servicoService.getAll(),
+        servicoService.getAllWithInactive(), // Buscar todos os serviços para a tabela
         funcionarioService.getAll()
       ]);
 
@@ -162,10 +162,73 @@ export const Servicos: React.FC = () => {
     onDetailOpen();
   };
 
+  const handleSalvarServico = async (dadosServico: any) => {
+    try {
+      if (servicoSelecionado) {
+        // Editar serviço existente
+        await servicoService.update(servicoSelecionado.id, dadosServico);
+        toast({
+          title: 'Serviço atualizado',
+          description: 'Serviço foi atualizado com sucesso.',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      } else {
+        // Criar novo serviço
+        await servicoService.create(dadosServico);
+        toast({
+          title: 'Serviço criado',
+          description: 'Novo serviço foi criado com sucesso.',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+      
+      // Fechar modal e recarregar dados
+      onFormClose();
+      await carregarDados();
+    } catch (error) {
+      console.error('Erro ao salvar serviço:', error);
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Não foi possível salvar o serviço. Tente novamente.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleExcluirServico = async (servico: Servico) => {
+    if (window.confirm(`Tem certeza que deseja desativar o serviço "${servico.nome}"?\n\nO serviço será desativado mas não será removido do sistema.`)) {
+      try {
+        await servicoService.deactivate(servico.id);
+        toast({
+          title: 'Serviço desativado',
+          description: 'Serviço foi desativado com sucesso.',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+        await carregarDados();
+      } catch (error) {
+        console.error('Erro ao desativar serviço:', error);
+        toast({
+          title: 'Erro ao desativar',
+          description: 'Não foi possível desativar o serviço. Tente novamente.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    }
+  };
+
   const handleFormClose = () => {
     setServicoSelecionado(null);
     onFormClose();
-    carregarDados(); // Recarregar dados após fechar modal
   };
 
   const getNomeFuncionario = (funcionarioId?: string): string => {
@@ -291,6 +354,14 @@ export const Servicos: React.FC = () => {
                       colorScheme="rosa"
                       onClick={() => handleEditarServico(servico)}
                     />
+                    <IconButton
+                      aria-label="Desativar serviço"
+                      icon={<DeleteIcon />}
+                      size="sm"
+                      variant="ghost"
+                      colorScheme="red"
+                      onClick={() => handleExcluirServico(servico)}
+                    />
                   </HStack>
                 </VStack>
               </CardBody>
@@ -379,6 +450,16 @@ export const Servicos: React.FC = () => {
                           colorScheme="rosa"
                           onClick={() => handleEditarServico(servico)}
                         />
+                        {servico.ativo && (
+                          <IconButton
+                            aria-label="Desativar serviço"
+                            icon={<DeleteIcon />}
+                            size="sm"
+                            variant="ghost"
+                            colorScheme="red"
+                            onClick={() => handleExcluirServico(servico)}
+                          />
+                        )}
                       </HStack>
                     </Td>
                   </Tr>
@@ -446,7 +527,7 @@ export const Servicos: React.FC = () => {
       <ServicoFormModal
         isOpen={isFormOpen}
         onClose={handleFormClose}
-        onSave={carregarDados}
+        onSave={handleSalvarServico}
         servico={servicoSelecionado}
         funcionarios={funcionarios}
       />

@@ -134,6 +134,19 @@ export const servicoService = {
     return data || []
   },
 
+  async getAllWithInactive(): Promise<Servico[]> {
+    const { data, error } = await supabase
+      .from('servicos')
+      .select(`
+        *,
+        funcionario:funcionario_responsavel_id (*)
+      `)
+      .order('nome')
+    
+    if (error) throw error
+    return data || []
+  },
+
   async create(servico: Omit<Servico, 'id' | 'created_at' | 'updated_at'>): Promise<Servico> {
     const { data, error } = await supabase
       .from('servicos')
