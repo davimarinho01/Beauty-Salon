@@ -20,7 +20,8 @@ import {
   GridItem,
   Text,
   Divider,
-  Box
+  Box,
+  useColorModeValue
 } from '@chakra-ui/react';
 
 interface Funcionario {
@@ -58,6 +59,12 @@ export const AgendamentoFormModal: React.FC<AgendamentoFormModalProps> = ({
   servicos,
   onSave
 }) => {
+  // Cores do dark mode
+  const resumoBg = useColorModeValue('gray.50', 'gray.700');
+  const resumoTextColor = useColorModeValue('gray.700', 'gray.100');
+  const valorColor = useColorModeValue('green.600', 'green.300');
+  const tituloColor = useColorModeValue('gray.700', 'gray.200');
+  
   const [formData, setFormData] = useState({
     servico_id: '',
     funcionario_id: '',
@@ -157,7 +164,7 @@ export const AgendamentoFormModal: React.FC<AgendamentoFormModalProps> = ({
             <VStack spacing={4}>
               {/* Informações do Cliente */}
               <Box w="full">
-                <Text fontWeight="bold" mb={3} color="gray.700">
+                <Text fontWeight="bold" mb={3} color={tituloColor}>
                   Informações do Cliente
                 </Text>
                 <Grid templateColumns="repeat(2, 1fr)" gap={4}>
@@ -188,7 +195,7 @@ export const AgendamentoFormModal: React.FC<AgendamentoFormModalProps> = ({
 
               {/* Serviço e Funcionário */}
               <Box w="full">
-                <Text fontWeight="bold" mb={3} color="gray.700">
+                <Text fontWeight="bold" mb={3} color={tituloColor}>
                   Serviço e Responsável
                 </Text>
                 <Grid templateColumns="repeat(2, 1fr)" gap={4}>
@@ -207,7 +214,7 @@ export const AgendamentoFormModal: React.FC<AgendamentoFormModalProps> = ({
                         ))}
                       </Select>
                       {getServicoSelecionado() && (
-                        <Text fontSize="sm" color="green.600" mt={1}>
+                        <Text fontSize="sm" color={valorColor} mt={1}>
                           Valor: R$ {getServicoSelecionado()!.valor_base.toLocaleString()}
                         </Text>
                       )}
@@ -236,7 +243,7 @@ export const AgendamentoFormModal: React.FC<AgendamentoFormModalProps> = ({
 
               {/* Data e Horário */}
               <Box w="full">
-                <Text fontWeight="bold" mb={3} color="gray.700">
+                <Text fontWeight="bold" mb={3} color={tituloColor}>
                   Data e Horário
                 </Text>
                 <Grid templateColumns="repeat(2, 1fr)" gap={4}>
@@ -283,27 +290,27 @@ export const AgendamentoFormModal: React.FC<AgendamentoFormModalProps> = ({
 
               {/* Resumo do Agendamento */}
               {formData.servico_id && formData.funcionario_id && formData.data_agendamento && formData.horario && (
-                <Box w="full" p={4} bg="gray.50" borderRadius="md">
-                  <Text fontWeight="bold" mb={2} color="gray.700">
+                <Box w="full" p={4} bg={resumoBg} borderRadius="md">
+                  <Text fontWeight="bold" mb={2} color={resumoTextColor}>
                     Resumo do Agendamento
                   </Text>
                   <VStack spacing={1} align="flex-start">
-                    <Text fontSize="sm">
+                    <Text fontSize="sm" color={resumoTextColor}>
                       <strong>Cliente:</strong> {formData.cliente_nome}
                     </Text>
-                    <Text fontSize="sm">
+                    <Text fontSize="sm" color={resumoTextColor}>
                       <strong>Serviço:</strong> {getServicoSelecionado()?.nome}
                     </Text>
-                    <Text fontSize="sm">
+                    <Text fontSize="sm" color={resumoTextColor}>
                       <strong>Funcionário:</strong> {getFuncionarioSelecionado()?.nome} {getFuncionarioSelecionado()?.sobrenome}
                     </Text>
-                    <Text fontSize="sm">
+                    <Text fontSize="sm" color={resumoTextColor}>
                       <strong>Data:</strong> {new Date(formData.data_agendamento + 'T00:00:00').toLocaleDateString()}
                     </Text>
-                    <Text fontSize="sm">
+                    <Text fontSize="sm" color={resumoTextColor}>
                       <strong>Horário:</strong> {formData.horario}
                     </Text>
-                    <Text fontSize="sm" color="green.600">
+                    <Text fontSize="sm" color={valorColor}>
                       <strong>Valor:</strong> R$ {getServicoSelecionado()?.valor_base.toLocaleString()}
                     </Text>
                   </VStack>
