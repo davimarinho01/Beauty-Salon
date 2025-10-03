@@ -1,9 +1,30 @@
 // Configuração do Google Calendar API
+
+// Detectar ambiente automaticamente
+const getRedirectUri = (): string => {
+  if (typeof window !== 'undefined') {
+    // Se está no browser, usar a URL atual
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1' ||
+                       window.location.hostname.includes('localhost');
+    
+    if (isLocalhost) {
+      return `${window.location.origin}/auth/google/callback`;
+    } else {
+      // Em produção, usar a URL do Vercel
+      return `${window.location.origin}/auth/google/callback`;
+    }
+  }
+  
+  // Fallback para desenvolvimento
+  return 'http://localhost:3001/auth/google/callback';
+};
+
 export const GOOGLE_CALENDAR_CONFIG = {
   // Estas credenciais precisam ser configuradas no Google Cloud Console
   CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
   CLIENT_SECRET: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || '',
-  REDIRECT_URI: import.meta.env.VITE_GOOGLE_REDIRECT_URI || 'http://localhost:3001/auth/google/callback',
+  REDIRECT_URI: getRedirectUri(),
   
   // Escopos necessários para o Calendar API
   SCOPES: [
