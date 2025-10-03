@@ -27,7 +27,7 @@ import {
   useToast,
   useColorModeValue
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, ViewIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon, ViewIcon, RepeatIcon } from '@chakra-ui/icons';
 import { funcionarioService } from '../services/api';
 import { FuncionarioFormModal } from '../components/modals/FuncionarioFormModal';
 import { FuncionarioDetailModal } from '../components/modals/FuncionarioDetailModal';
@@ -79,10 +79,13 @@ export const Funcionarios: React.FC = () => {
 
   const carregarFuncionarios = async () => {
     try {
+      console.log('🔄 Carregando funcionários...');
       setLoading(true);
       const dados = await funcionarioService.getAllWithPerformance();
+      console.log('✅ Funcionários carregados:', dados);
       setFuncionarios(dados);
     } catch (error) {
+      console.error('❌ Erro ao carregar funcionários:', error);
       toast({
         title: 'Erro ao carregar funcionários',
         description: 'Não foi possível carregar a lista de funcionários.',
@@ -139,6 +142,7 @@ export const Funcionarios: React.FC = () => {
       await carregarFuncionarios();
       onFormClose();
     } catch (error) {
+      console.error('❌ Erro ao salvar funcionário:', error);
       toast({
         title: 'Erro ao salvar funcionário',
         description: 'Não foi possível salvar os dados do funcionário.',
@@ -181,13 +185,25 @@ export const Funcionarios: React.FC = () => {
           <Heading size="lg" color={headingColor}>
             Gestão de Funcionários
           </Heading>
-          <Button
-            leftIcon={<AddIcon />}
-            colorScheme="rosa"
-            onClick={handleNovoFuncionario}
-          >
-            Novo Funcionário
-          </Button>
+          <HStack spacing={3}>
+            <Button
+              leftIcon={<RepeatIcon />}
+              variant="outline"
+              colorScheme="gray"
+              onClick={carregarFuncionarios}
+              isLoading={loading}
+              loadingText="Atualizando..."
+            >
+              Atualizar
+            </Button>
+            <Button
+              leftIcon={<AddIcon />}
+              colorScheme="rosa"
+              onClick={handleNovoFuncionario}
+            >
+              Novo Funcionário
+            </Button>
+          </HStack>
         </HStack>
 
         {/* Cards de Performance */}

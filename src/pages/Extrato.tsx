@@ -39,7 +39,8 @@ import {
   FaCalendarAlt,
   FaDownload,
   FaUser,
-  FaCut
+  FaCut,
+  FaSync
 } from 'react-icons/fa';
 import { financeiroService, agendamentoService, funcionarioService, servicoService } from '../services/api';
 import { MovimentacaoFinanceira } from '../types';
@@ -79,6 +80,7 @@ export const Extrato = () => {
   }, [periodo]);
 
   const carregarDados = async () => {
+    console.log('🔄 Carregando dados do extrato...');
     setLoading(true);
     try {
       const [movData, agendData, funcData, servData] = await Promise.all([
@@ -88,12 +90,26 @@ export const Extrato = () => {
         servicoService.getAll()
       ]);
 
+      console.log('✅ Dados carregados:', { 
+        movimentacoes: movData.length, 
+        agendamentos: agendData.length,
+        funcionarios: funcData.length,
+        servicos: servData.length
+      });
+
       setMovimentacoes(movData);
       setAgendamentos(agendData);
       setFuncionarios(funcData);
       setServicos(servData);
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('❌ Erro ao carregar dados do extrato:', error);
+      toast({
+        title: 'Erro ao carregar dados',
+        description: 'Não foi possível carregar os dados do extrato.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
@@ -137,9 +153,9 @@ export const Extrato = () => {
   );
 
   // Cálculos financeiros
-  const totalEntradas = movimentacoesFiltradas
-    .filter(m => m.tipo === 'ENTRADA')
-    .reduce((sum, m) => sum + m.valor, 0);
+  const movimentacoesEntrada = movimentacoesFiltradas.filter(m => m.tipo === 'ENTRADA');
+  const totalEntradas = movimentacoesEntrada.reduce((sum, m) => sum + m.valor, 0);
+  const servicosRealizados = movimentacoesEntrada.length;
 
   const totalSaidas = movimentacoesFiltradas
     .filter(m => m.tipo === 'SAIDA')
@@ -147,6 +163,7 @@ export const Extrato = () => {
 
   const saldoLiquido = totalEntradas - totalSaidas;
   const margemLucro = totalEntradas > 0 ? ((saldoLiquido / totalEntradas) * 100) : 0;
+  const ticketMedio = servicosRealizados > 0 ? (totalEntradas / servicosRealizados) : 0;
 
   // Período anterior para comparação
   const dataInicioAnterior = new Date(dataInicio);
@@ -177,29 +194,55 @@ export const Extrato = () => {
     .filter(m => m.tipo === 'ENTRADA')
     .reduce((sum, m) => sum + m.valor, 0);
 
+  const totalSaidasAnterior = movimentacoesAnteriores
+    .filter(m => m.tipo === 'SAIDA')
+    .reduce((sum, m) => sum + m.valor, 0);
+
+  const saldoLiquidoAnterior = totalEntradasAnterior - totalSaidasAnterior;
+
+  // Calcular crescimento para cada indicador
   const crescimentoReceita = totalEntradasAnterior > 0 
     ? ((totalEntradas - totalEntradasAnterior) / totalEntradasAnterior * 100)
-    : 0;
+    : (totalEntradas > 0 ? 100 : 0);
+
+  const crescimentoSaidas = totalSaidasAnterior > 0 
+    ? ((totalSaidas - totalSaidasAnterior) / totalSaidasAnterior * 100)
+    : (totalSaidas > 0 ? 100 : 0);
+
+  const crescimentoSaldoLiquido = totalEntradasAnterior > 0 
+    ? ((saldoLiquido - saldoLiquidoAnterior) / Math.abs(totalEntradasAnterior) * 100)
+    : (saldoLiquido > 0 ? 100 : (saldoLiquido < 0 ? -100 : 0));
+
+  console.log('📈 Crescimentos calculados:', {
+    receita: crescimentoReceita,
+    saidas: crescimentoSaidas,
+    saldoLiquido: crescimentoSaldoLiquido,
+    periodo: periodo
+  });
 
   // Relatório por funcionário
   const relatorioFuncionarios: RelatorioFuncionario[] = funcionarios.map(funcionario => {
-    const agendamentosFuncionario = agendamentosFiltrados.filter(a => 
-      a.funcionario_id === funcionario.id
+    console.log(`📊 Calculando relatório para ${funcionario.nome}`);
+    
+    // Usar movimentações financeiras reais, não agendamentos
+    const movimentacoesFuncionario = movimentacoesFiltradas.filter(m => 
+      m.funcionario_id === funcionario.id || m.funcionario?.id === funcionario.id
     );
 
-    const faturamento = agendamentosFuncionario.reduce((sum, a) => {
-      const servico = servicos.find(s => s.id === a.servico_id);
-      return sum + (servico?.valor_base || 0);
+    const faturamento = movimentacoesFuncionario.reduce((sum, m) => {
+      return sum + (m.valor || 0);
     }, 0);
 
-    const comissao = faturamento * (funcionario.comissao_percentual / 100);
-    const percentualMeta = funcionario.meta_mensal > 0 
+    const comissao = faturamento * ((funcionario.comissao_percentual || 0) / 100);
+    const percentualMeta = (funcionario.meta_mensal || 0) > 0 
       ? (faturamento / funcionario.meta_mensal * 100)
       : 0;
 
+    console.log(`✅ ${funcionario.nome}: ${movimentacoesFuncionario.length} serviços, R$ ${faturamento.toFixed(2)}`);
+
     return {
       funcionario,
-      totalServicos: agendamentosFuncionario.length,
+      totalServicos: movimentacoesFuncionario.length,
       faturamento,
       comissao,
       percentualMeta
@@ -259,7 +302,7 @@ export const Extrato = () => {
         saldoLiquido,
         margemLucro,
         totalServicos: agendamentosFiltrados.length,
-        ticketMedio: totalEntradas / agendamentosFiltrados.length || 0,
+        ticketMedio: ticketMedio,
         crescimentoReceita,
         relatorioFuncionarios,
         servicosPopulares,
@@ -323,6 +366,17 @@ export const Extrato = () => {
             </Select>
             
             <Button
+              leftIcon={<FaSync />}
+              variant="outline"
+              colorScheme="gray"
+              onClick={carregarDados}
+              isLoading={loading}
+              loadingText="Atualizando..."
+            >
+              Atualizar
+            </Button>
+            
+            <Button
               leftIcon={<FaDownload />}
               colorScheme="blue"
               variant="outline"
@@ -375,7 +429,8 @@ export const Extrato = () => {
                   {formatCurrency(totalSaidas)}
                 </StatNumber>
                 <StatHelpText>
-                  {movimentacoesFiltradas.filter(m => m.tipo === 'SAIDA').length} transações
+                  <StatArrow type={crescimentoSaidas >= 0 ? 'increase' : 'decrease'} />
+                  {Math.abs(crescimentoSaidas).toFixed(1)}% vs período anterior
                 </StatHelpText>
               </Stat>
             </CardBody>
@@ -392,7 +447,8 @@ export const Extrato = () => {
                   {formatCurrency(saldoLiquido)}
                 </StatNumber>
                 <StatHelpText>
-                  Margem: {margemLucro.toFixed(1)}%
+                  <StatArrow type={crescimentoSaldoLiquido >= 0 ? 'increase' : 'decrease'} />
+                  {Math.abs(crescimentoSaldoLiquido).toFixed(1)}% vs período anterior
                 </StatHelpText>
               </Stat>
             </CardBody>
@@ -406,10 +462,10 @@ export const Extrato = () => {
                   Serviços Realizados
                 </StatLabel>
                 <StatNumber color="purple.500" fontSize="2xl">
-                  {agendamentosFiltrados.length}
+                  {servicosRealizados}
                 </StatNumber>
                 <StatHelpText>
-                  Ticket médio: {formatCurrency(totalEntradas / agendamentosFiltrados.length || 0)}
+                  Ticket médio: {formatCurrency(ticketMedio)}
                 </StatHelpText>
               </Stat>
             </CardBody>

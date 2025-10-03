@@ -126,10 +126,39 @@ export const Dashboard = () => {
         return ((atual - anterior) / anterior) * 100;
       };
 
-      // Para calcular período anterior (simplificado)
-      const totalEntradasAnterior = 1000; // Valor simulado - implementar lógica real
-      const totalSaidasAnterior = 500;
+      // Calcular período anterior real
+      const periodoEmDias = parseInt(periodo);
+      const dataFim = new Date(); // Data atual como fim do período
+      const dataInicioAnterior = new Date(dataInicio);
+      dataInicioAnterior.setDate(dataInicioAnterior.getDate() - periodoEmDias);
+      
+      const dataFimAnterior = new Date(dataInicio);
+      dataFimAnterior.setDate(dataFimAnterior.getDate() - 1);
+
+      console.log('📊 Calculando período anterior:', {
+        atual: `${dataInicio.toISOString().split('T')[0]} até ${dataFim.toISOString().split('T')[0]}`,
+        anterior: `${dataInicioAnterior.toISOString().split('T')[0]} até ${dataFimAnterior.toISOString().split('T')[0]}`
+      });
+
+      const movimentacoesAnteriores = movimentacoes.filter((mov: any) => {
+        const dataMovimentacao = new Date(mov.data_movimentacao);
+        return dataMovimentacao >= dataInicioAnterior && dataMovimentacao <= dataFimAnterior;
+      });
+
+      const totalEntradasAnterior = movimentacoesAnteriores
+        .filter((mov: any) => mov.tipo === 'ENTRADA')
+        .reduce((total: number, mov: any) => total + mov.valor, 0);
+      
+      const totalSaidasAnterior = movimentacoesAnteriores
+        .filter((mov: any) => mov.tipo === 'SAIDA')
+        .reduce((total: number, mov: any) => total + mov.valor, 0);
+      
       const saldoAnterior = totalEntradasAnterior - totalSaidasAnterior;
+
+      console.log('💰 Comparação de períodos:', {
+        atual: { entradas: totalEntradas, saidas: totalSaidas, saldo: saldoLiquido },
+        anterior: { entradas: totalEntradasAnterior, saidas: totalSaidasAnterior, saldo: saldoAnterior }
+      });
 
       const cards = [
         {

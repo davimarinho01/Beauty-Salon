@@ -77,8 +77,15 @@ export const funcionarioService = {
   },
 
   async getAllWithPerformance(): Promise<any[]> {
+    console.log('🔄 Calculando performance dos funcionários...');
+    
     const funcionarios = await this.getAll();
     const movimentacoes = await financeiroService.getMovimentacoes();
+    
+    console.log('📊 Dados carregados:', {
+      funcionarios: funcionarios.length,
+      movimentacoes: movimentacoes.length
+    });
     
     const hoje = new Date();
     const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
@@ -86,9 +93,22 @@ export const funcionarioService = {
     inicioSemana.setDate(hoje.getDate() - hoje.getDay());
 
     return funcionarios.map(funcionario => {
-      const vendas = movimentacoes.filter(m => 
-        m.funcionario_id === funcionario.id && m.tipo === 'ENTRADA'
-      );
+      console.log(`👤 Calculando para ${funcionario.nome}:`, funcionario.id);
+      
+      // Buscar todas as vendas do funcionário
+      const vendas = movimentacoes.filter(m => {
+        const isFuncionario = m.funcionario_id === funcionario.id || 
+                             m.funcionario?.id === funcionario.id;
+        const isEntrada = m.tipo === 'ENTRADA';
+        
+        if (isFuncionario && isEntrada) {
+          console.log(`💰 Venda encontrada: R$ ${m.valor} em ${m.data_movimentacao}`);
+        }
+        
+        return isFuncionario && isEntrada;
+      });
+
+      console.log(`📈 Total de vendas encontradas para ${funcionario.nome}: ${vendas.length}`);
 
       const vendasMes = vendas.filter(v => 
         new Date(v.data_movimentacao) >= inicioMes
@@ -98,22 +118,45 @@ export const funcionarioService = {
         new Date(v.data_movimentacao) >= inicioSemana
       );
 
-      const faturamento_mes = vendasMes.reduce((sum, v) => sum + v.valor, 0);
-      const faturamento_semana = vendasSemana.reduce((sum, v) => sum + v.valor, 0);
+      const faturamento_total = vendas.reduce((sum, v) => sum + (v.valor || 0), 0);
+      const faturamento_mes = vendasMes.reduce((sum, v) => sum + (v.valor || 0), 0);
+      const faturamento_semana = vendasSemana.reduce((sum, v) => sum + (v.valor || 0), 0);
+      
+      const servicos_realizados = vendas.length;
+      const ticket_medio = servicos_realizados > 0 ? faturamento_total / servicos_realizados : 0;
+      
       const meta_mes = funcionario.meta_mensal || 0;
       const meta_semana = funcionario.meta_semanal || 0;
+      const comissao_percentual = funcionario.comissao_percentual || 0;
 
-      return {
+      const resultado = {
         ...funcionario,
+        // Estatísticas totais
+        faturamento_total,
+        servicos_realizados,
+        ticket_medio,
+        
+        // Estatísticas do mês
         vendas_mes: vendasMes.length,
-        vendas_semana: vendasSemana.length,
         faturamento_mes,
-        faturamento_semana,
         percentual_meta_mes: meta_mes > 0 ? (faturamento_mes / meta_mes) * 100 : 0,
+        comissao_mes: faturamento_mes * comissao_percentual / 100,
+        
+        // Estatísticas da semana
+        vendas_semana: vendasSemana.length,
+        faturamento_semana,
         percentual_meta_semana: meta_semana > 0 ? (faturamento_semana / meta_semana) * 100 : 0,
-        comissao_mes: faturamento_mes * (funcionario.comissao_percentual || 0) / 100,
-        comissao_semana: faturamento_semana * (funcionario.comissao_percentual || 0) / 100,
+        comissao_semana: faturamento_semana * comissao_percentual / 100,
       };
+
+      console.log(`✅ Performance calculada para ${funcionario.nome}:`, {
+        faturamento_total: resultado.faturamento_total,
+        servicos_realizados: resultado.servicos_realizados,
+        ticket_medio: resultado.ticket_medio,
+        comissao_mes: resultado.comissao_mes
+      });
+
+      return resultado;
     });
   }
 }
