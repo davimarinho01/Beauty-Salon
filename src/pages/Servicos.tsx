@@ -28,7 +28,7 @@ import {
   Progress,
   useColorModeValue
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, ViewIcon, DeleteIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon, ViewIcon, DeleteIcon, RepeatIcon } from '@chakra-ui/icons';
 import { servicoService, funcionarioService, financeiroService } from '../services/api';
 import { ServicoFormModal } from '../components/modals/ServicoFormModal';
 import { ServicoDetailModal } from '../components/modals/ServicoDetailModal';
@@ -88,15 +88,20 @@ export const Servicos: React.FC = () => {
   const carregarDados = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Carregando dados dos serviços...');
       
       // Carregar serviços e funcionários em paralelo
       const [servicosData, funcionariosData] = await Promise.all([
         servicoService.getAllWithInactive(), // Buscar todos os serviços para a tabela
         funcionarioService.getAll()
       ]);
+      
+      console.log('📊 Serviços carregados:', servicosData.length);
+      console.log('👥 Funcionários carregados:', funcionariosData.length);
 
       // Carregar performance dos serviços
       const movimentacoes = await financeiroService.getMovimentacoes();
+      console.log('💰 Movimentações carregadas:', movimentacoes.length);
       
       // Calcular performance para cada serviço
       const servicosComPerformance = servicosData.map((servico: any) => {
@@ -129,8 +134,10 @@ export const Servicos: React.FC = () => {
       setServicos(servicosComPerformance);
       setFuncionarios(funcionariosData);
       
+      console.log('✅ Dados carregados com sucesso!');
+      
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('❌ Erro ao carregar dados:', error);
       toast({
         title: 'Erro ao carregar dados',
         description: 'Não foi possível carregar os serviços.',
@@ -146,6 +153,12 @@ export const Servicos: React.FC = () => {
   useEffect(() => {
     carregarDados();
   }, []);
+
+  // Função para forçar recarregamento dos dados
+  const recarregarDados = async () => {
+    console.log('🔄 Recarregando dados dos serviços...');
+    await carregarDados();
+  };
 
   const handleNovoServico = () => {
     setServicoSelecionado(null);
@@ -259,13 +272,25 @@ export const Servicos: React.FC = () => {
           <Heading size="lg" color={headingColor}>
             Gestão de Serviços
           </Heading>
-          <Button
-            leftIcon={<AddIcon />}
-            colorScheme="rosa"
-            onClick={handleNovoServico}
-          >
-            Novo Serviço
-          </Button>
+          <HStack spacing={3}>
+            <Button
+              leftIcon={<RepeatIcon />}
+              variant="outline"
+              colorScheme="rosa"
+              onClick={recarregarDados}
+              isLoading={loading}
+              loadingText="Atualizando..."
+            >
+              Atualizar
+            </Button>
+            <Button
+              leftIcon={<AddIcon />}
+              colorScheme="rosa"
+              onClick={handleNovoServico}
+            >
+              Novo Serviço
+            </Button>
+          </HStack>
         </HStack>
 
         {/* Cards de Serviços */}
