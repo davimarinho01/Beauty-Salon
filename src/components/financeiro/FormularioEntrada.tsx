@@ -168,96 +168,102 @@ export const FormularioEntrada = ({ onSuccess }: Props) => {
               </Text>
             </HStack>
 
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-              <FormControl isRequired>
-                <FormLabel>
-                  <HStack spacing={2}>
-                    <Text>📅</Text>
-                    <Text>Data da Movimentação</Text>
-                  </HStack>
-                </FormLabel>
-                <Input
-                  type="date"
-                  value={formulario.data_movimentacao}
-                  onChange={(e) => setFormulario(prev => ({ ...prev, data_movimentacao: e.target.value }))}
-                  max={new Date().toISOString().split('T')[0]} // Não permite datas futuras
-                />
-              </FormControl>
+            <VStack spacing={4} align="stretch">
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                <FormControl>
+                  <FormLabel>
+                    <HStack spacing={2}>
+                      <Text>📅</Text>
+                      <Text>Data da Movimentação</Text>
+                    </HStack>
+                  </FormLabel>
+                  <Input
+                    type="date"
+                    value={formulario.data_movimentacao}
+                    onChange={(e) => setFormulario(prev => ({ ...prev, data_movimentacao: e.target.value }))}
+                    max={new Date().toISOString().split('T')[0]} // Não permite datas futuras
+                  />
+                </FormControl>
 
-              <FormControl isRequired>
-                <FormLabel>
-                  <HStack spacing={2}>
-                    <Icon as={User} w={4} h={4} />
-                    <Text>Funcionário</Text>
-                  </HStack>
-                </FormLabel>
-                <Select
-                  value={formulario.funcionario_id}
-                  onChange={(e) => setFormulario(prev => ({ ...prev, funcionario_id: e.target.value }))}
-                  placeholder="Selecione o funcionário"
-                >
-                  {funcionarios.map(funcionario => (
-                    <option key={funcionario.id} value={funcionario.id}>
-                      {funcionario.nome} {funcionario.sobrenome} - {funcionario.funcao}
-                    </option>
-                  ))}
-                </Select>
-              </FormControl>
+                <FormControl>
+                  <FormLabel>
+                    <HStack spacing={2}>
+                      <Icon as={User} w={4} h={4} />
+                      <Text>Funcionário</Text>
+                    </HStack>
+                  </FormLabel>
+                  <Select
+                    value={formulario.funcionario_id}
+                    onChange={(e) => setFormulario(prev => ({ ...prev, funcionario_id: e.target.value }))}
+                    placeholder="Selecione o funcionário"
+                  >
+                    {funcionarios.map(funcionario => (
+                      <option key={funcionario.id} value={funcionario.id}>
+                        {funcionario.nome} {funcionario.sobrenome} - {funcionario.funcao}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+              </SimpleGrid>
 
-              <FormControl isRequired>
-                <FormLabel>
-                  <HStack spacing={2}>
-                    <Icon as={Scissors} w={4} h={4} />
-                    <Text>Serviço</Text>
-                  </HStack>
-                </FormLabel>
-                <Select
-                  value={formulario.servico_id}
-                  onChange={(e) => setFormulario(prev => ({ ...prev, servico_id: e.target.value }))}
-                  placeholder="Selecione o serviço"
-                >
-                  {servicos.map(servico => (
-                    <option key={servico.id} value={servico.id}>
-                      {servico.nome} - R$ {servico.valor_base.toFixed(2)}
-                    </option>
-                  ))}
-                </Select>
-              </FormControl>
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                <FormControl>
+                  <FormLabel>
+                    <HStack spacing={2}>
+                      <Icon as={Scissors} w={4} h={4} />
+                      <Text>Serviço</Text>
+                    </HStack>
+                  </FormLabel>
+                  <Select
+                    value={formulario.servico_id}
+                    onChange={(e) => setFormulario(prev => ({ ...prev, servico_id: e.target.value }))}
+                    placeholder="Selecione o serviço"
+                  >
+                    {servicos.map(servico => (
+                      <option key={servico.id} value={servico.id}>
+                        {servico.nome} - R$ {servico.valor_base.toFixed(2)}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
 
-              <FormControl isRequired>
-                <FormLabel>Valor</FormLabel>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formulario.valor}
-                  onChange={(e) => setFormulario(prev => ({ ...prev, valor: parseFloat(e.target.value) || 0 }))}
-                  placeholder="0,00"
-                />
-              </FormControl>
+                <FormControl>
+                  <FormLabel>Valor</FormLabel>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formulario.valor}
+                    onChange={(e) => setFormulario(prev => ({ ...prev, valor: parseFloat(e.target.value) || 0 }))}
+                    placeholder="0,00"
+                  />
+                </FormControl>
+              </SimpleGrid>
 
-              <FormControl isRequired>
-                <FormLabel>Cliente</FormLabel>
-                <Input
-                  value={formulario.cliente_nome}
-                  onChange={(e) => setFormulario(prev => ({ ...prev, cliente_nome: e.target.value }))}
-                  placeholder="Nome do cliente"
-                />
-              </FormControl>
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                <FormControl>
+                  <FormLabel>Cliente</FormLabel>
+                  <Input
+                    value={formulario.cliente_nome}
+                    onChange={(e) => setFormulario(prev => ({ ...prev, cliente_nome: e.target.value }))}
+                    placeholder="Nome do cliente"
+                  />
+                </FormControl>
 
-              <FormControl isRequired>
-                <FormLabel>Método de Pagamento</FormLabel>
-                <Select
-                  value={formulario.metodo_pagamento}
-                  onChange={(e) => setFormulario(prev => ({ ...prev, metodo_pagamento: e.target.value as MetodoPagamento }))}
-                >
-                  <option value="PIX">PIX</option>
-                  <option value="DINHEIRO">Dinheiro</option>
-                  <option value="CREDITO">Cartão de Crédito</option>
-                  <option value="DEBITO">Cartão de Débito</option>
-                </Select>
-              </FormControl>
-            </SimpleGrid>
+                <FormControl>
+                  <FormLabel>Método de Pagamento</FormLabel>
+                  <Select
+                    value={formulario.metodo_pagamento}
+                    onChange={(e) => setFormulario(prev => ({ ...prev, metodo_pagamento: e.target.value as MetodoPagamento }))}
+                  >
+                    <option value="PIX">PIX</option>
+                    <option value="DINHEIRO">Dinheiro</option>
+                    <option value="CREDITO">Cartão de Crédito</option>
+                    <option value="DEBITO">Cartão de Débito</option>
+                  </Select>
+                </FormControl>
+              </SimpleGrid>
+            </VStack>
 
             <HStack justify="flex-end" spacing={3}>
               <Button
