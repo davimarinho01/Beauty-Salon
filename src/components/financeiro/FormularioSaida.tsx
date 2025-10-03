@@ -27,7 +27,8 @@ export const FormularioSaida = ({ onSuccess }: Props) => {
   const [formulario, setFormulario] = useState<FormSaida>({
     tipo_saida: '',
     valor: 0,
-    descricao: ''
+    descricao: '',
+    data_movimentacao: new Date().toISOString().split('T')[0] // Data atual por padrão
   })
 
   const toast = useToast()
@@ -48,7 +49,28 @@ export const FormularioSaida = ({ onSuccess }: Props) => {
 
     setLoading(true)
     try {
-      await onSuccess(formulario)
+      // Corrigir timezone da data se ela foi fornecida
+      let dataMovimentacao = formulario.data_movimentacao;
+      if (dataMovimentacao) {
+        // Criar data no horário local brasileiro (meio-dia para evitar problemas de timezone)
+        const [ano, mes, dia] = dataMovimentacao.split('-');
+        const dataLocal = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia), 12, 0, 0);
+        dataMovimentacao = dataLocal.toISOString();
+        console.log('📅 Data selecionada:', formulario.data_movimentacao);
+        console.log('📅 Data corrigida:', dataLocal.toLocaleDateString('pt-BR'));
+      } else {
+        // Se não foi fornecida, usar data atual
+        const hoje = new Date();
+        dataMovimentacao = hoje.toISOString();
+        console.log('📅 Usando data atual:', hoje.toLocaleDateString('pt-BR'));
+      }
+
+      const dadosFinais = {
+        ...formulario,
+        data_movimentacao: dataMovimentacao
+      };
+
+      await onSuccess(dadosFinais);
       
       // Limpar formulário
       setFormulario({
@@ -90,6 +112,21 @@ export const FormularioSaida = ({ onSuccess }: Props) => {
             </HStack>
 
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+              <FormControl isRequired>
+                <FormLabel>
+                  <HStack spacing={2}>
+                    <Text>📅</Text>
+                    <Text>Data da Movimentação</Text>
+                  </HStack>
+                </FormLabel>
+                <Input
+                  type="date"
+                  value={formulario.data_movimentacao}
+                  onChange={(e) => setFormulario(prev => ({ ...prev, data_movimentacao: e.target.value }))}
+                  max={new Date().toISOString().split('T')[0]} // Não permite datas futuras
+                />
+              </FormControl>
+
               <FormControl isRequired>
                 <FormLabel>Tipo da Saída</FormLabel>
                 <Input

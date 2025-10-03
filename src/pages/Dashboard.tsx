@@ -20,6 +20,7 @@ import {
   Spinner,
   useColorModeValue,
 } from '@chakra-ui/react';
+import { RepeatIcon } from '@chakra-ui/icons';
 import {
   DollarSign,
   TrendingUp,
@@ -34,8 +35,9 @@ import { financeiroService } from '../services/api';
 
 export const Dashboard = () => {
   const [exportingPDF, setExportingPDF] = useState(false);
-  const [periodo, setPeriodo] = useState('7');
+  const [periodo, setPeriodo] = useState('30');
   const [carregando, setCarregando] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [dadosDashboard, setDadosDashboard] = useState<any>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [statsCards, setStatsCards] = useState<any[]>([]);
@@ -47,6 +49,19 @@ export const Dashboard = () => {
   const borderColor = useColorModeValue('neutral.200', 'gray.600');
   const selectBg = useColorModeValue('white', 'gray.700');
   const cardBg = useColorModeValue('white', 'gray.800');
+
+  // Opções de período
+  const periodos = [
+    { value: '7', label: 'Últimos 7 dias' },
+    { value: '30', label: 'Últimos 30 dias' },
+    { value: '90', label: 'Últimos 90 dias' }
+  ];
+
+  // Função para obter o nome do dia da semana
+  const obterDiaDaSemana = (data: Date) => {
+    const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    return diasSemana[data.getDay()];
+  };
   const cardBorderColor = useColorModeValue('neutral.100', 'gray.600');
   const statLabelColor = useColorModeValue('neutral.600', 'gray.400');
   const statNumberColor = useColorModeValue('neutral.800', 'gray.100');
@@ -54,33 +69,44 @@ export const Dashboard = () => {
   const carregarDadosDashboard = async () => {
     try {
       setCarregando(true);
+      setLoading(true);
       
       // Calcular período
       const hoje = new Date();
+      hoje.setHours(23, 59, 59, 999); // Fim do dia atual
       let dataInicio = new Date();
       
       switch (periodo) {
         case '7':
           dataInicio.setDate(hoje.getDate() - 7);
+          dataInicio.setHours(0, 0, 0, 0); // Início do dia
           break;
         case '30':
           dataInicio.setDate(hoje.getDate() - 30);
+          dataInicio.setHours(0, 0, 0, 0); // Início do dia
           break;
         case '90':
           dataInicio.setDate(hoje.getDate() - 90);
+          dataInicio.setHours(0, 0, 0, 0); // Início do dia
           break;
         default:
           dataInicio.setDate(hoje.getDate() - 7);
+          dataInicio.setHours(0, 0, 0, 0); // Início do dia
       }
 
       // Carregar movimentações
+      console.log('🔄 Dashboard: Carregando movimentações...');
       const movimentacoes = await financeiroService.getMovimentacoes();
+      console.log('📊 Dashboard: Total de movimentações carregadas:', movimentacoes.length);
       
       // Filtrar movimentações por período
       const movimentacoesPeriodo = movimentacoes.filter((mov: any) => {
         const dataMov = new Date(mov.data_movimentacao);
         return dataMov >= dataInicio && dataMov <= hoje;
       });
+      
+      console.log('📅 Dashboard: Movimentações no período selecionado:', movimentacoesPeriodo.length);
+      console.log('📅 Dashboard: Período:', { dataInicio: dataInicio.toISOString(), hoje: hoje.toISOString() });
 
       // Calcular estatísticas
       const entradasFiltradas = movimentacoesPeriodo.filter((mov: any) => mov.tipo === 'ENTRADA');
@@ -95,29 +121,84 @@ export const Dashboard = () => {
         
       const saldoLiquido = totalEntradas - totalSaidas;
       
-      // Criar dados para o gráfico (agrupado por dia da semana)
+      // Criar dados para o gráfico (dinâmico baseado no período selecionado)
       const dadosGrafico = [];
-      const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      const diasPeriodo = parseInt(periodo);
       
-      for (let i = 0; i < 7; i++) {
-        const dia = new Date(hoje);
-        dia.setDate(hoje.getDate() - (6 - i));
-        const faturamentoDiaFiltrado = movimentacoesPeriodo
-          .filter((mov: any) => {
-            const dataMov = new Date(mov.data_movimentacao);
-            return dataMov.toDateString() === dia.toDateString() && mov.tipo === 'ENTRADA';
+      if (diasPeriodo <= 7) {
+        // Para períodos de 7 dias ou menos, mostrar por dia da semana
+        
+        for (let i = 0; i < diasPeriodo; i++) {
+          const dia = new Date(hoje);
+          dia.setDate(hoje.getDate() - (diasPeriodo - 1 - i));
+          
+          const faturamentoDiaFiltrado = movimentacoesPeriodo
+            .filter((mov: any) => {
+              const dataMov = new Date(mov.data_movimentacao);
+              return dataMov.toDateString() === dia.toDateString() && mov.tipo === 'ENTRADA';
+            });
+          
+          const faturamentoDia = faturamentoDiaFiltrado.length > 0
+            ? faturamentoDiaFiltrado.reduce((acc: number, mov: any) => acc + mov.valor, 0)
+            : 0;
+          
+          dadosGrafico.push({
+            day: obterDiaDaSemana(dia),
+            faturamento: faturamentoDia
           });
+        }
+      } else if (diasPeriodo === 30) {
+        // Para período de 30 dias, mostrar cada dia individual
+        for (let i = 0; i < diasPeriodo; i++) {
+          const dia = new Date(hoje);
+          dia.setDate(hoje.getDate() - (diasPeriodo - 1 - i));
+          
+          const faturamentoDiaFiltrado = movimentacoesPeriodo
+            .filter((mov: any) => {
+              const dataMov = new Date(mov.data_movimentacao);
+              return dataMov.toDateString() === dia.toDateString() && mov.tipo === 'ENTRADA';
+            });
+          
+          const faturamentoDia = faturamentoDiaFiltrado.length > 0
+            ? faturamentoDiaFiltrado.reduce((acc: number, mov: any) => acc + mov.valor, 0)
+            : 0;
+          
+          dadosGrafico.push({
+            day: `${dia.getDate()}/${dia.getMonth() + 1}`,
+            faturamento: faturamentoDia
+          });
+        }
+      } else {
+        // Para períodos de 90 dias, agrupar por semanas
+        const semanas = Math.ceil(diasPeriodo / 7);
         
-        const faturamentoDia = faturamentoDiaFiltrado.length > 0
-          ? faturamentoDiaFiltrado.reduce((acc: number, mov: any) => acc + mov.valor, 0)
-          : 0;
-        
-        dadosGrafico.push({
-          day: diasSemana[dia.getDay()],
-          faturamento: faturamentoDia
-        });
+        for (let i = 0; i < semanas; i++) {
+          const inicioDaSemana = new Date(hoje);
+          inicioDaSemana.setDate(hoje.getDate() - (diasPeriodo - 1) + (i * 7));
+          
+          const fimDaSemana = new Date(inicioDaSemana);
+          fimDaSemana.setDate(inicioDaSemana.getDate() + 6);
+          
+          // Garantir que não passe da data atual
+          if (fimDaSemana > hoje) {
+            fimDaSemana.setTime(hoje.getTime());
+          }
+          
+          const faturamentoSemana = movimentacoesPeriodo
+            .filter((mov: any) => {
+              const dataMov = new Date(mov.data_movimentacao);
+              return dataMov >= inicioDaSemana && dataMov <= fimDaSemana && mov.tipo === 'ENTRADA';
+            })
+            .reduce((acc: number, mov: any) => acc + mov.valor, 0);
+          
+          dadosGrafico.push({
+            day: `${inicioDaSemana.getDate()}/${inicioDaSemana.getMonth() + 1} - ${fimDaSemana.getDate()}/${fimDaSemana.getMonth() + 1}`,
+            faturamento: faturamentoSemana
+          });
+        }
       }
 
+      console.log('📊 Dados do gráfico gerados:', { periodo: diasPeriodo, pontos: dadosGrafico.length, dados: dadosGrafico });
       setChartData(dadosGrafico);
 
       // Criar cards de estatísticas
@@ -214,6 +295,7 @@ export const Dashboard = () => {
       });
     } finally {
       setCarregando(false);
+      setLoading(false);
     }
   };
 
@@ -294,6 +376,17 @@ export const Dashboard = () => {
             </Text>
           </VStack>
           <HStack spacing={4}>
+            <Button
+              leftIcon={<RepeatIcon />}
+              variant="outline"
+              colorScheme="gray"
+              onClick={carregarDadosDashboard}
+              isLoading={loading}
+              loadingText="Atualizando..."
+              size="sm"
+            >
+              Atualizar
+            </Button>
             <Select
               value={periodo}
               onChange={(e) => setPeriodo(e.target.value)}
@@ -378,11 +471,11 @@ export const Dashboard = () => {
                 <HStack spacing={3}>
                   <Icon as={BarChart3} w={5} h={5} color="brand.500" />
                   <Heading size="md" color={headingColor}>
-                    Faturamento por Dia
+                    Faturamento por {periodo === '7' ? 'Dia' : periodo === '30' ? 'Dia' : 'Semana'}
                   </Heading>
                 </HStack>
                 <Text fontSize="sm" color={textColor}>
-                  Últimos 7 dias
+                  {periodos.find(p => p.value === periodo)?.label}
                 </Text>
               </HStack>
               

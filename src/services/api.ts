@@ -252,6 +252,19 @@ export const financeiroService = {
   },
 
   async criarEntrada(entrada: FormEntrada): Promise<MovimentacaoFinanceira> {
+    // Processar data corretamente
+    let dataMovimentacao;
+    if (entrada.data_movimentacao) {
+      // Se data foi fornecida, usar ela diretamente (já está no formato YYYY-MM-DD)
+      dataMovimentacao = entrada.data_movimentacao;
+      console.log('📅 API: Usando data fornecida:', dataMovimentacao);
+    } else {
+      // Se não foi fornecida, usar data atual no formato YYYY-MM-DD
+      const hoje = new Date();
+      dataMovimentacao = hoje.toISOString().split('T')[0];
+      console.log('📅 API: Usando data atual:', dataMovimentacao);
+    }
+
     const movimentacao = {
       tipo: 'ENTRADA' as const,
       valor: entrada.valor,
@@ -260,7 +273,7 @@ export const financeiroService = {
       funcionario_id: entrada.funcionario_id || null,
       servico_id: entrada.servico_id || null,
       cliente_nome: entrada.cliente_nome || null,
-      data_movimentacao: entrada.data_movimentacao || new Date().toISOString()
+      data_movimentacao: dataMovimentacao
     }
     
     const { data, error } = await supabase
@@ -278,12 +291,25 @@ export const financeiroService = {
   },
 
   async criarSaida(saida: FormSaida): Promise<MovimentacaoFinanceira> {
+    // Processar data corretamente
+    let dataMovimentacao;
+    if (saida.data_movimentacao) {
+      // Se data foi fornecida, usar ela diretamente (já está no formato YYYY-MM-DD)
+      dataMovimentacao = saida.data_movimentacao;
+      console.log('📅 API: Usando data fornecida (saída):', dataMovimentacao);
+    } else {
+      // Se não foi fornecida, usar data atual no formato YYYY-MM-DD
+      const hoje = new Date();
+      dataMovimentacao = hoje.toISOString().split('T')[0];
+      console.log('📅 API: Usando data atual (saída):', dataMovimentacao);
+    }
+
     const movimentacao = {
       tipo: 'SAIDA' as const,
       valor: saida.valor,
       descricao: saida.descricao,
       metodo_pagamento: 'DINHEIRO' as const, // FormSaida não tem metodo_pagamento
-      data_movimentacao: saida.data_movimentacao || new Date().toISOString()
+      data_movimentacao: dataMovimentacao
     }
     
     const { data, error } = await supabase
