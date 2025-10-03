@@ -228,6 +228,29 @@ export const Agendamento: React.FC = () => {
     }
   };
 
+  const handleExcluirAgendamento = async (agendamentoId: string) => {
+    try {
+      await agendamentoService.delete(agendamentoId);
+      toast({
+        title: 'Agendamento excluído',
+        description: 'O agendamento foi excluído com sucesso.',
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+      });
+      
+      await carregarDados();
+    } catch (error) {
+      toast({
+        title: 'Erro ao excluir agendamento',
+        description: 'Não foi possível excluir o agendamento.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
   const navegarSemana = (direcao: 'anterior' | 'proxima') => {
     const novaSemana = new Date(semanaAtual);
     if (direcao === 'anterior') {
@@ -461,6 +484,13 @@ export const Agendamento: React.FC = () => {
                                     </MenuItem>
                                     <MenuItem onClick={() => handleAlterarStatus(agendamento.id, 'CANCELADO')}>
                                       Cancelar
+                                    </MenuItem>
+                                    <MenuItem 
+                                      onClick={() => handleExcluirAgendamento(agendamento.id)}
+                                      color="red.500"
+                                      _hover={{ bg: 'red.50' }}
+                                    >
+                                      Excluir Agendamento
                                     </MenuItem>
                                   </MenuList>
                                 </Menu>
