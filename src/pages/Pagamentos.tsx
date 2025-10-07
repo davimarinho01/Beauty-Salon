@@ -348,10 +348,20 @@ export const Pagamentos = () => {
               <Stat>
                 <StatLabel color={textColor}>Método Mais Usado</StatLabel>
                 <StatNumber color="blue.500" fontSize="xl">
-                  {metodosAnalise[0] ? formatMetodo(metodosAnalise[0].metodo) : 'N/A'}
+                  {(() => {
+                    const metodoMaisUsado = metodosAnalise.reduce((prev, current) => 
+                      prev.quantidade > current.quantidade ? prev : current, metodosAnalise[0]
+                    );
+                    return metodoMaisUsado ? formatMetodo(metodoMaisUsado.metodo) : 'N/A';
+                  })()}
                 </StatNumber>
                 <StatHelpText>
-                  {metodosAnalise[0] ? `${metodosAnalise[0].percentual.toFixed(1)}% do total` : ''}
+                  {(() => {
+                    const metodoMaisUsado = metodosAnalise.reduce((prev, current) => 
+                      prev.quantidade > current.quantidade ? prev : current, metodosAnalise[0]
+                    );
+                    return metodoMaisUsado ? `${metodoMaisUsado.quantidade} transações` : '';
+                  })()}
                 </StatHelpText>
               </Stat>
             </CardBody>
