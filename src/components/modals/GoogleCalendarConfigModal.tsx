@@ -36,14 +36,19 @@ export const GoogleCalendarConfigModal = ({ isOpen, onClose }: GoogleCalendarCon
   const toast = useToast();
 
   useEffect(() => {
-    if (isOpen) {
-      setIsConnected(googleCalendarService.isConnected());
-      
-      // Carregar status de sincronização se conectado
-      if (googleCalendarService.isConnected()) {
-        loadSyncStatus();
+    const checkConnection = async () => {
+      if (isOpen) {
+        const connected = await googleCalendarService.isConnected();
+        setIsConnected(connected);
+        
+        // Carregar status de sincronização se conectado
+        if (connected) {
+          loadSyncStatus();
+        }
       }
-    }
+    };
+
+    checkConnection();
 
     // Escutar mensagens do popup de autenticação
     const handleMessage = async (event: MessageEvent) => {
@@ -135,14 +140,15 @@ export const GoogleCalendarConfigModal = ({ isOpen, onClose }: GoogleCalendarCon
     }
 
     // Escutar mensagens de autorização concluída
-    const handleMessage = (event: MessageEvent) => {
+    const handleMessage = async (event: MessageEvent) => {
       if (event.origin !== window.location.origin) {
         return; // Ignorar mensagens de outras origens
       }
       
       if (event.data?.type === 'GOOGLE_AUTH_COMPLETED') {
         window.removeEventListener('message', handleMessage);
-        setIsConnected(googleCalendarService.isConnected());
+        const connected = await googleCalendarService.isConnected();
+        setIsConnected(connected);
         
         if (event.data.success) {
           toast({
@@ -167,9 +173,10 @@ export const GoogleCalendarConfigModal = ({ isOpen, onClose }: GoogleCalendarCon
     window.addEventListener('message', handleMessage);
     
     // Fallback: verificar status após 30 segundos
-    setTimeout(() => {
+    setTimeout(async () => {
       window.removeEventListener('message', handleMessage);
-      setIsConnected(googleCalendarService.isConnected());
+      const connected = await googleCalendarService.isConnected();
+      setIsConnected(connected);
     }, 30000);
   };
 

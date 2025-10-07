@@ -17,7 +17,7 @@ const getRedirectUri = (): string => {
   }
   
   // Fallback para desenvolvimento
-  return 'http://localhost:3001/auth/google/callback';
+  return 'http://localhost:3000/auth/google/callback';
 };
 
 export const GOOGLE_CALENDAR_CONFIG = {

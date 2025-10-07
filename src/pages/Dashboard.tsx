@@ -95,9 +95,9 @@ export const Dashboard = () => {
       }
 
       // Carregar movimentações
-      console.log('🔄 Dashboard: Carregando movimentações...');
+
       const movimentacoes = await financeiroService.getMovimentacoes();
-      console.log('📊 Dashboard: Total de movimentações carregadas:', movimentacoes.length);
+
       
       // Filtrar movimentações por período
       const movimentacoesPeriodo = movimentacoes.filter((mov: any) => {
@@ -105,8 +105,7 @@ export const Dashboard = () => {
         return dataMov >= dataInicio && dataMov <= hoje;
       });
       
-      console.log('📅 Dashboard: Movimentações no período selecionado:', movimentacoesPeriodo.length);
-      console.log('📅 Dashboard: Período:', { dataInicio: dataInicio.toISOString(), hoje: hoje.toISOString() });
+
 
       // Calcular estatísticas
       const entradasFiltradas = movimentacoesPeriodo.filter((mov: any) => mov.tipo === 'ENTRADA');
@@ -198,7 +197,7 @@ export const Dashboard = () => {
         }
       }
 
-      console.log('📊 Dados do gráfico gerados:', { periodo: diasPeriodo, pontos: dadosGrafico.length, dados: dadosGrafico });
+
       setChartData(dadosGrafico);
 
       // Criar cards de estatísticas
@@ -209,17 +208,11 @@ export const Dashboard = () => {
 
       // Calcular período anterior real
       const periodoEmDias = parseInt(periodo);
-      const dataFim = new Date(); // Data atual como fim do período
       const dataInicioAnterior = new Date(dataInicio);
       dataInicioAnterior.setDate(dataInicioAnterior.getDate() - periodoEmDias);
       
       const dataFimAnterior = new Date(dataInicio);
       dataFimAnterior.setDate(dataFimAnterior.getDate() - 1);
-
-      console.log('📊 Calculando período anterior:', {
-        atual: `${dataInicio.toISOString().split('T')[0]} até ${dataFim.toISOString().split('T')[0]}`,
-        anterior: `${dataInicioAnterior.toISOString().split('T')[0]} até ${dataFimAnterior.toISOString().split('T')[0]}`
-      });
 
       const movimentacoesAnteriores = movimentacoes.filter((mov: any) => {
         const dataMovimentacao = new Date(mov.data_movimentacao);
@@ -235,11 +228,6 @@ export const Dashboard = () => {
         .reduce((total: number, mov: any) => total + mov.valor, 0);
       
       const saldoAnterior = totalEntradasAnterior - totalSaidasAnterior;
-
-      console.log('💰 Comparação de períodos:', {
-        atual: { entradas: totalEntradas, saidas: totalSaidas, saldo: saldoLiquido },
-        anterior: { entradas: totalEntradasAnterior, saidas: totalSaidasAnterior, saldo: saldoAnterior }
-      });
 
       const cards = [
         {

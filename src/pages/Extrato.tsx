@@ -80,7 +80,6 @@ export const Extrato = () => {
   }, [periodo]);
 
   const carregarDados = async () => {
-    console.log('🔄 Carregando dados do extrato...');
     setLoading(true);
     try {
       const [movData, agendData, funcData, servData] = await Promise.all([
@@ -89,13 +88,6 @@ export const Extrato = () => {
         funcionarioService.getAll(),
         servicoService.getAll()
       ]);
-
-      console.log('✅ Dados carregados:', { 
-        movimentacoes: movData.length, 
-        agendamentos: agendData.length,
-        funcionarios: funcData.length,
-        servicos: servData.length
-      });
 
       setMovimentacoes(movData);
       setAgendamentos(agendData);
@@ -213,17 +205,8 @@ export const Extrato = () => {
     ? ((saldoLiquido - saldoLiquidoAnterior) / Math.abs(totalEntradasAnterior) * 100)
     : (saldoLiquido > 0 ? 100 : (saldoLiquido < 0 ? -100 : 0));
 
-  console.log('📈 Crescimentos calculados:', {
-    receita: crescimentoReceita,
-    saidas: crescimentoSaidas,
-    saldoLiquido: crescimentoSaldoLiquido,
-    periodo: periodo
-  });
-
   // Relatório por funcionário
   const relatorioFuncionarios: RelatorioFuncionario[] = funcionarios.map(funcionario => {
-    console.log(`📊 Calculando relatório para ${funcionario.nome}`);
-    
     // Usar movimentações financeiras reais, não agendamentos
     const movimentacoesFuncionario = movimentacoesFiltradas.filter(m => 
       m.funcionario_id === funcionario.id || m.funcionario?.id === funcionario.id
@@ -237,8 +220,6 @@ export const Extrato = () => {
     const percentualMeta = (funcionario.meta_mensal || 0) > 0 
       ? (faturamento / funcionario.meta_mensal * 100)
       : 0;
-
-    console.log(`✅ ${funcionario.nome}: ${movimentacoesFuncionario.length} serviços, R$ ${faturamento.toFixed(2)}`);
 
     return {
       funcionario,

@@ -99,13 +99,10 @@ export const FormularioEntrada = ({ onSuccess }: Props) => {
         const [ano, mes, dia] = dataMovimentacao.split('-');
         const dataLocal = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia), 12, 0, 0);
         dataMovimentacao = dataLocal.toISOString();
-        console.log('📅 Data selecionada:', formulario.data_movimentacao);
-        console.log('📅 Data corrigida:', dataLocal.toLocaleDateString('pt-BR'));
       } else {
         // Se não foi fornecida, usar data atual
         const hoje = new Date();
         dataMovimentacao = hoje.toISOString();
-        console.log('📅 Usando data atual:', hoje.toLocaleDateString('pt-BR'));
       }
 
       const dadosFinais = {

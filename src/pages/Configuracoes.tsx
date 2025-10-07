@@ -164,7 +164,15 @@ export const Configuracoes = () => {
     }
   }
 
-  const isGoogleConnected = googleCalendarService.isConnected()
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+
+  useEffect(() => {
+    const checkGoogleConnection = async () => {
+      const connected = await googleCalendarService.isConnected();
+      setIsGoogleConnected(connected);
+    };
+    checkGoogleConnection();
+  }, []);
 
   return (
     <Box bg={bgColor} color={textColor} minH="100vh" p={6}>

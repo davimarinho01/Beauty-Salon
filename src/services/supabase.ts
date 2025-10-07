@@ -12,7 +12,6 @@ export const testConnection = async () => {
   try {
     const { error } = await supabase.from('funcionarios').select('count', { count: 'exact' })
     if (error) throw error
-    console.log('✅ Conexão com Supabase estabelecida!')
     return true
   } catch (error) {
     console.error('❌ Erro ao conectar com Supabase:', error)

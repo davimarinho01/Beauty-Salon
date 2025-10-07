@@ -36,15 +36,12 @@ interface Funcionario {
   nome: string;
   sobrenome: string;
   funcao: string;
-  email: string;
 }
 
 interface Servico {
   id: string;
   nome: string;
   valor_base: number;
-  funcionario_responsavel_id: string;
-  funcionario?: Funcionario;
 }
 
 interface Agendamento {
@@ -55,28 +52,14 @@ interface Agendamento {
   cliente_telefone?: string;
   data_agendamento: string;
   horario: string;
-  horario_fim?: string;
   status: 'AGENDADO' | 'CONFIRMADO' | 'REALIZADO' | 'CANCELADO';
   observacoes?: string;
   funcionario?: Funcionario;
   servico?: Servico;
-  servicos?: Array<{
-    id: string;
-    servico_id: string;
-    servico?: Servico;
-    ordem: number;
-  }>;
-  funcionarios?: Array<{
-    id: string;
-    funcionario_id: string;
-    funcionario?: Funcionario;
-    responsavel_principal: boolean;
-    ordem: number;
-  }>;
 }
 
 const HORARIOS_FUNCIONAMENTO = [
-  '09:00', '09:30', '10:00', '10:30',
+  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
   '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
   '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
   '17:00', '17:30', '18:00', '18:30', '19:00'
@@ -227,6 +210,9 @@ export const Agendamento: React.FC = () => {
     }
   };
 
+      }
+  };
+
   const handleAlterarStatus = async (agendamentoId: string, novoStatus: string) => {
     try {
       await agendamentoService.updateStatus(agendamentoId, novoStatus);
@@ -334,7 +320,7 @@ export const Agendamento: React.FC = () => {
     setSemanaAtual(novaSemana);
   };
 
-  const getTodosEventosPorDiaHora = (dia: Date, hora: string) => {
+  const getAgendamentosPorDiaHora = (dia: Date, hora: string) => {
     const dataStr = dia.toISOString().split('T')[0];
     
     // Buscar agendamentos regulares
@@ -352,21 +338,27 @@ export const Agendamento: React.FC = () => {
       );
     }
 
-    // Buscar eventos do Google Calendar
-    const eventosGoogleDoDia = eventosGoogle.filter(evento => {
-      if (!evento.data_inicio) return false;
-      
-      // Extrair data e hora do data_inicio (formato ISO)
+    return agendamentosDoDia;
+  };
+
+  const getEventosGooglePorDiaHora = (dia: Date, hora: string) => {
+    const dataStr = dia.toISOString().split('T')[0];
+    
+    return eventosGoogle.filter(evento => {
       const dataInicio = new Date(evento.data_inicio);
-      const eventDataStr = dataInicio.toISOString().split('T')[0];
-      const eventoHora = dataInicio.toTimeString().substring(0, 5);
+      const dataInicioStr = dataInicio.toISOString().split('T')[0];
+      const horarioEvento = dataInicio.toTimeString().substring(0, 5);
       const horaComparação = hora.substring(0, 5);
       
-      return eventDataStr === dataStr && eventoHora === horaComparação;
+      return dataInicioStr === dataStr && horarioEvento === horaComparação;
     });
+  };
 
-    // Combinar agendamentos e eventos do Google
-    return [...agendamentosDoDia, ...eventosGoogleDoDia];
+  const getTodosEventosPorDiaHora = (dia: Date, hora: string): (Agendamento | EventoGoogle)[] => {
+    const agendamentosHora = getAgendamentosPorDiaHora(dia, hora);
+    const eventosHora = getEventosGooglePorDiaHora(dia, hora);
+    
+    return [...agendamentosHora, ...eventosHora];
   };
 
   const getStatusColor = (status: string) => {
@@ -458,9 +450,10 @@ export const Agendamento: React.FC = () => {
                 variant="outline"
                 onClick={handleSincronizarExclusoes}
                 isLoading={loading}
-                loadingText="Atualizando..."
+                loadingText="Sincronizando..."
+                size="sm"
               >
-                Atualizar
+                Sincronizar Exclusões
               </Button>
             )}
           </HStack>
@@ -523,156 +516,108 @@ export const Agendamento: React.FC = () => {
                   >
                     <VStack spacing={1} h="full">
                       {eventosDaHora.map((evento) => {
-                        // Type guard para agendamentos
-                        if ('cliente_nome' in evento && 'status' in evento) {
-                          return (
-                            <Card
-                              key={evento.id}
-                              size="sm"
-                              w="full"
-                              bg={`${getStatusColor(evento.status)}.50`}
-                              borderLeft="3px solid"
-                              borderLeftColor={`${getStatusColor(evento.status)}.400`}
-                            >
-                              <CardBody p={2}>
-                                <VStack spacing={1} align="flex-start">
-                                  <Text fontSize="xs" fontWeight="bold" noOfLines={1} color={textColor}>
-                                    {evento.cliente_nome}
-                                  </Text>
-                                  
-                                  {/* Múltiplos Serviços */}
-                                  {evento.servicos && evento.servicos.length > 0 ? (
-                                    <Box>
-                                      {evento.servicos.slice(0, 2).map((agendServ: any, index: number) => (
-                                        <Text key={index} fontSize="xs" color={mutedTextColor} noOfLines={1}>
-                                          {index === 0 ? '🎯' : '+'} {agendServ.servico?.nome}
-                                        </Text>
-                                      ))}
-                                      {evento.servicos.length > 2 && (
-                                        <Text fontSize="xs" color="blue.500">
-                                          +{evento.servicos.length - 2} serviços
-                                        </Text>
-                                      )}
-                                    </Box>
-                                  ) : (
-                                    <Text fontSize="xs" color={mutedTextColor} noOfLines={1}>
-                                      {evento.servico?.nome || 'Serviço'}
-                                    </Text>
-                                  )}
-                                  
-                                  {evento.horario_fim && (
-                                    <Text fontSize="xs" color="blue.500" noOfLines={1}>
-                                      ⏰ {evento.horario.substring(0, 5)} - {evento.horario_fim.substring(0, 5)}
-                                    </Text>
-                                  )}
-                                  
-                                  {/* Múltiplos Funcionários */}
-                                  <HStack spacing={1} flexWrap="wrap">
-                                    {evento.funcionarios && evento.funcionarios.length > 0 ? (
-                                      evento.funcionarios.slice(0, 2).map((agendFunc: any, index: number) => (
-                                        <HStack key={index} spacing={1}>
-                                          <Avatar 
-                                            size="2xs" 
-                                            name={`${agendFunc.funcionario?.nome} ${agendFunc.funcionario?.sobrenome}`}
-                                            bg={agendFunc.responsavel_principal ? "rosa.400" : "gray.400"}
-                                          />
-                                          <Text fontSize="xs" color={mutedTextColor}>
-                                            {agendFunc.funcionario?.nome}
-                                            {agendFunc.responsavel_principal && ' 👑'}
-                                          </Text>
-                                        </HStack>
-                                      ))
-                                    ) : evento.funcionario ? (
-                                      <HStack spacing={1}>
-                                        <Avatar 
-                                          size="2xs" 
-                                          name={`${evento.funcionario?.nome} ${evento.funcionario?.sobrenome}`}
-                                          bg="rosa.400"
-                                        />
-                                        <Text fontSize="xs" color={mutedTextColor}>
-                                          {evento.funcionario?.nome}
-                                        </Text>
-                                      </HStack>
-                                    ) : (
-                                      <Text fontSize="xs" color={mutedTextColor} fontStyle="italic">
-                                        Sem funcionário
-                                      </Text>
-                                    )}
-                                    {evento.funcionarios && evento.funcionarios.length > 2 && (
-                                      <Text fontSize="xs" color="blue.500">
-                                        +{evento.funcionarios.length - 2}
-                                      </Text>
-                                    )}
-                                  </HStack>
-                                  <HStack justify="space-between" w="full">
-                                    <Badge size="xs" colorScheme={getStatusColor(evento.status)}>
-                                      {getStatusLabel(evento.status)}
-                                    </Badge>
-                                    <Menu>
-                                      <MenuButton
-                                        as={IconButton}
-                                        icon={<ChevronDownIcon />}
-                                        size="xs"
-                                        variant="ghost"
-                                      />
-                                      <MenuList fontSize="sm">
-                                        <MenuItem onClick={() => handleAlterarStatus(evento.id, 'AGENDADO')}>
-                                          Marcar como Agendado
-                                        </MenuItem>
-                                        <MenuItem onClick={() => handleAlterarStatus(evento.id, 'CONFIRMADO')}>
-                                          Marcar como Confirmado
-                                        </MenuItem>
-                                        <MenuItem onClick={() => handleAlterarStatus(evento.id, 'REALIZADO')}>
-                                          Marcar como Realizado
-                                        </MenuItem>
-                                        <MenuItem onClick={() => handleAlterarStatus(evento.id, 'CANCELADO')}>
-                                          Cancelar
-                                        </MenuItem>
-                                        <MenuItem 
-                                          onClick={() => handleExcluirAgendamento(evento.id)}
-                                          color="red.500"
-                                          _hover={{ bg: 'red.50' }}
-                                        >
-                                          Excluir Agendamento
-                                        </MenuItem>
-                                      </MenuList>
-                                    </Menu>
-                                  </HStack>
-                                </VStack>
-                              </CardBody>
-                            </Card>
-                          );
-                        }
-                        
-                        // Type guard para eventos do Google Calendar
-                        if ('titulo' in evento) {
-                          return (
-                            <Card
-                              key={evento.id}
-                              size="sm"
-                              w="full"
-                              bg="blue.50"
-                              borderLeft="3px solid"
-                              borderLeftColor="blue.400"
-                            >
-                              <CardBody p={2}>
-                                <VStack spacing={1} align="flex-start">
-                                  <Text fontSize="xs" fontWeight="bold" noOfLines={1} color={textColor}>
-                                    {evento.titulo}
-                                  </Text>
-                                  <Text fontSize="xs" color={mutedTextColor} noOfLines={1}>
-                                    📅 Google Calendar
-                                  </Text>
-                                  <Badge size="xs" colorScheme="blue">
-                                    Evento Externo
-                                  </Badge>
-                                </VStack>
-                              </CardBody>
-                            </Card>
-                          );
-                        }
-                        return null;
-                      })}
+  if ('cliente_nome' in evento && 'status' in evento) {
+    return (
+      <Card
+        key={evento.id}
+        size="sm"
+        w="full"
+        bg={`${getStatusColor(evento.status)}.50`}
+        borderLeft="3px solid"
+        borderLeftColor={`${getStatusColor(evento.status)}.400`}
+      >
+        <CardBody p={2}>
+          <VStack spacing={1} align="flex-start">
+            <Text fontSize="xs" fontWeight="bold" noOfLines={1} color={textColor}>
+              {evento.cliente_nome}
+            </Text>
+            <Text fontSize="xs" color={mutedTextColor} noOfLines={1}>
+              {evento.servico?.nome || 'Serviço'}
+            </Text>
+            <HStack spacing={1}>
+              {evento.funcionario ? (
+                <>
+                  <Avatar 
+                    size="2xs" 
+                    name={`${evento.funcionario?.nome} ${evento.funcionario?.sobrenome}`}
+                    bg="rosa.400"
+                  />
+                  <Text fontSize="xs" color={mutedTextColor}>
+                    {evento.funcionario?.nome}
+                  </Text>
+                </>
+              ) : (
+                <Text fontSize="xs" color={mutedTextColor} fontStyle="italic">
+                  Sem funcionário
+                </Text>
+              )}
+            </HStack>
+            <HStack justify="space-between" w="full">
+              <Badge size="xs" colorScheme={getStatusColor(evento.status)}>
+                {getStatusLabel(evento.status)}
+              </Badge>
+              <Menu>
+                <MenuButton
+                  as={IconButton}
+                  icon={<ChevronDownIcon />}
+                  size="xs"
+                  variant="ghost"
+                />
+                <MenuList>
+                  <MenuItem onClick={() => handleAlterarStatus(evento.id, 'AGENDADO')}>
+                    Marcar como Agendado
+                  </MenuItem>
+                  <MenuItem onClick={() => handleAlterarStatus(evento.id, 'CONFIRMADO')}>
+                    Marcar como Confirmado
+                  </MenuItem>
+                  <MenuItem onClick={() => handleAlterarStatus(evento.id, 'REALIZADO')}>
+                    Marcar como Realizado
+                  </MenuItem>
+                  <MenuItem onClick={() => handleAlterarStatus(evento.id, 'CANCELADO')}>
+                    Marcar como Cancelado
+                  </MenuItem>
+                  <MenuItem 
+                    onClick={() => handleExcluirAgendamento(evento.id)}
+                    color="red.500"
+                    _hover={{ bg: 'red.50' }}
+                  >
+                    Excluir Agendamento
+                  </MenuItem>
+                </MenuList>
+              </Menu>
+            </HStack>
+          </VStack>
+        </CardBody>
+      </Card>
+    );
+  } else if ('titulo' in evento && 'google_event_id' in evento) {
+    return (
+      <Card
+        key={evento.id}
+        size="sm"
+        w="full"
+        bg="blue.50"
+        borderLeft="3px solid"
+        borderLeftColor="blue.400"
+      >
+        <CardBody p={2}>
+          <VStack spacing={1} align="flex-start">
+            <Text fontSize="xs" fontWeight="bold" noOfLines={1} color={textColor}>
+              {evento.titulo}
+            </Text>
+            <Text fontSize="xs" color={mutedTextColor} noOfLines={1}>
+              📅 Google Calendar
+            </Text>
+            <Badge size="xs" colorScheme="blue">
+              Evento Externo
+            </Badge>
+          </VStack>
+        </CardBody>
+      </Card>
+    );
+  }
+  return null;
+})}
                     </VStack>
                   </GridItem>
                 );

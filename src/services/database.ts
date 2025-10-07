@@ -5,7 +5,6 @@ export const databaseService = {
   // Resetar todos os dados do banco
   async resetAllData(): Promise<void> {
     try {
-      console.log('🗑️ Iniciando reset do banco de dados...')
       
       // Para UUIDs, precisamos buscar todos os registros e deletar
       // Deletar em ordem para respeitar foreign keys
@@ -26,7 +25,6 @@ export const databaseService = {
           throw agendamentosError
         }
       }
-      console.log('✅ Agendamentos deletados')
       
       // 2. Movimentações financeiras (referenciam funcionarios e servicos)
       const { data: movimentacoes } = await supabase
@@ -44,7 +42,6 @@ export const databaseService = {
           throw movimentacoesError
         }
       }
-      console.log('✅ Movimentações deletadas')
       
       // 3. Serviços (referenciam funcionarios)
       const { data: servicos } = await supabase
@@ -62,7 +59,6 @@ export const databaseService = {
           throw servicosError
         }
       }
-      console.log('✅ Serviços deletados')
       
       // 4. Funcionários (tabela base)
       const { data: funcionarios } = await supabase
@@ -80,9 +76,7 @@ export const databaseService = {
           throw funcionariosError
         }
       }
-      console.log('✅ Funcionários deletados')
       
-      console.log('🎉 Reset do banco de dados concluído com sucesso!')
       
     } catch (error) {
       console.error('❌ Erro durante reset do banco:', error)
@@ -133,7 +127,6 @@ export const databaseService = {
   // Inserir dados de exemplo para testes
   async insertSampleData(): Promise<void> {
     try {
-      console.log('📝 Inserindo dados de exemplo...')
       
       // 1. Inserir funcionários de exemplo
       const { data: funcionarios, error: funcionariosError } = await supabase
@@ -187,7 +180,6 @@ export const databaseService = {
         .select()
 
       if (funcionariosError) throw funcionariosError
-      console.log(`✅ ${funcionarios?.length} funcionários inseridos`)
 
       // 2. Inserir serviços de exemplo
       const { data: servicos, error: servicosError } = await supabase
@@ -267,7 +259,6 @@ export const databaseService = {
         .select()
 
       if (servicosError) throw servicosError
-      console.log(`✅ ${servicos?.length} serviços inseridos`)
 
       // 3. Inserir movimentações dos últimos 30 dias
       const movimentacoes = []
@@ -341,7 +332,6 @@ export const databaseService = {
         if (movimentacoesError) throw movimentacoesError
       }
 
-      console.log(`✅ ${movimentacoes.length} movimentações inseridas`)
 
       // 4. Inserir alguns agendamentos para os próximos dias
       const agendamentos = []
@@ -388,9 +378,7 @@ export const databaseService = {
         .insert(agendamentos)
 
       if (agendamentosError) throw agendamentosError
-      console.log(`✅ ${agendamentos.length} agendamentos inseridos`)
 
-      console.log('🎉 Dados de exemplo inseridos com sucesso!')
       
     } catch (error) {
       console.error('❌ Erro ao inserir dados de exemplo:', error)

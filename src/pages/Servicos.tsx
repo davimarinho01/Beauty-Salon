@@ -88,7 +88,6 @@ export const Servicos: React.FC = () => {
   const carregarDados = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Carregando dados dos serviços...');
       
       // Carregar serviços e funcionários em paralelo
       const [servicosData, funcionariosData] = await Promise.all([
@@ -96,12 +95,9 @@ export const Servicos: React.FC = () => {
         funcionarioService.getAll()
       ]);
       
-      console.log('📊 Serviços carregados:', servicosData.length);
-      console.log('👥 Funcionários carregados:', funcionariosData.length);
 
       // Carregar performance dos serviços
       const movimentacoes = await financeiroService.getMovimentacoes();
-      console.log('💰 Movimentações carregadas:', movimentacoes.length);
       
       // Calcular performance para cada serviço
       const servicosComPerformance = servicosData.map((servico: any) => {
@@ -134,7 +130,6 @@ export const Servicos: React.FC = () => {
       setServicos(servicosComPerformance);
       setFuncionarios(funcionariosData);
       
-      console.log('✅ Dados carregados com sucesso!');
       
     } catch (error) {
       console.error('❌ Erro ao carregar dados:', error);
@@ -156,7 +151,6 @@ export const Servicos: React.FC = () => {
 
   // Função para forçar recarregamento dos dados
   const recarregarDados = async () => {
-    console.log('🔄 Recarregando dados dos serviços...');
     await carregarDados();
   };
 
@@ -266,7 +260,7 @@ export const Servicos: React.FC = () => {
 
   return (
     <Box p={6}>
-      <VStack spacing={6} align="stretch">
+      <VStack spacing={4} align="stretch">
         {/* Cabeçalho */}
         <HStack justify="space-between" align="center">
           <Heading size="lg" color={headingColor}>
@@ -293,54 +287,107 @@ export const Servicos: React.FC = () => {
           </HStack>
         </HStack>
 
-        {/* Cards de Serviços */}
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+        {/* Cards Estatísticos - Movidos para o topo */}
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+          <Card bg={cardBg} shadow="sm" borderColor={borderColor} size="sm">
+            <CardBody py={3}>
+              <Stat>
+                <StatLabel color={mutedTextColor} fontSize="xs">Total de Serviços</StatLabel>
+                <StatNumber color={textColor} fontSize="xl">
+                  {servicos.filter(s => s.ativo).length}
+                </StatNumber>
+                <StatHelpText color={mutedTextColor} fontSize="xs" mt={0}>
+                  {servicos.filter(s => !s.ativo).length} inativos
+                </StatHelpText>
+              </Stat>
+            </CardBody>
+          </Card>
+
+          <Card bg={cardBg} shadow="sm" borderColor={borderColor} size="sm">
+            <CardBody py={3}>
+              <Stat>
+                <StatLabel color={mutedTextColor} fontSize="xs">Preço Médio</StatLabel>
+                <StatNumber color="green.500" fontSize="xl">
+                  R$ {servicos.length > 0 
+                    ? (servicos.reduce((sum, s) => sum + s.valor_base, 0) / servicos.length).toFixed(2)
+                    : '0,00'}
+                </StatNumber>
+                <StatHelpText color={mutedTextColor} fontSize="xs" mt={0}>Baseado em todos os serviços</StatHelpText>
+              </Stat>
+            </CardBody>
+          </Card>
+
+          <Card bg={cardBg} shadow="sm" borderColor={borderColor} size="sm">
+            <CardBody py={3}>
+              <Stat>
+                <StatLabel color={mutedTextColor} fontSize="xs">Mais Vendido</StatLabel>
+                <StatNumber color="blue.500" fontSize="xl">
+                  {servicos.length > 0 
+                    ? servicos.reduce((prev, current) => 
+                        (prev.vendas_mes || 0) > (current.vendas_mes || 0) ? prev : current
+                      ).nome 
+                    : 'N/A'}
+                </StatNumber>
+                <StatHelpText color={mutedTextColor} fontSize="xs" mt={0}>
+                  {servicos.length > 0 
+                    ? servicos.reduce((prev, current) => 
+                        (prev.vendas_mes || 0) > (current.vendas_mes || 0) ? prev : current
+                      ).vendas_mes || 0
+                    : 0} vendas este mês
+                </StatHelpText>
+              </Stat>
+            </CardBody>
+          </Card>
+        </SimpleGrid>
+
+        {/* Cards de Serviços - Compactos */}
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={3}>
           {servicos.filter(s => s.ativo).map((servico) => (
-            <Card key={servico.id} bg={cardBg} shadow="sm" borderWidth="1px" borderColor={borderColor}>
-              <CardBody>
-                <VStack spacing={4} align="stretch">
-                  {/* Header do Card */}
+            <Card key={servico.id} bg={cardBg} shadow="sm" borderWidth="1px" borderColor={borderColor} size="sm">
+              <CardBody py={3} px={4}>
+                <VStack spacing={2} align="stretch">
+                  {/* Header do Card - Compacto */}
                   <Box>
-                    <Text fontWeight="bold" fontSize="lg" color={textColor} mb={1}>
+                    <Text fontWeight="bold" fontSize="md" color={textColor} noOfLines={1} mb={1}>
                       {servico.nome}
                     </Text>
-                    <Text fontSize="2xl" fontWeight="bold" color="green.500">
+                    <Text fontSize="lg" fontWeight="bold" color="green.500">
                       R$ {servico.valor_base.toLocaleString()}
                     </Text>
                   </Box>
 
-                  {/* Funcionário Responsável */}
+                  {/* Funcionário Responsável - Compacto */}
                   <Box>
-                    <Text fontSize="sm" color={mutedTextColor} mb={1}>Responsável</Text>
-                    <HStack>
+                    <Text fontSize="xs" color={mutedTextColor}>Responsável</Text>
+                    <HStack spacing={1}>
                       <Avatar 
                         size="xs" 
                         name={getNomeFuncionario(servico.funcionario_responsavel_id)}
                         bg="rosa.400"
                         color="white"
                       />
-                      <Text fontSize="sm" fontWeight="medium" color={textColor}>
+                      <Text fontSize="xs" fontWeight="medium" color={textColor} noOfLines={1}>
                         {getNomeFuncionario(servico.funcionario_responsavel_id)}
                       </Text>
                     </HStack>
                   </Box>
 
-                  {/* Performance do Mês */}
-                  <VStack spacing={2} align="stretch">
-                    <Text fontSize="sm" fontWeight="bold" color={textColor}>
+                  {/* Performance do Mês - Compacta */}
+                  <VStack spacing={1} align="stretch">
+                    <Text fontSize="xs" fontWeight="bold" color={textColor}>
                       Performance do Mês
                     </Text>
                     
                     <HStack justify="space-between">
                       <Text fontSize="xs" color={mutedTextColor}>Vendas</Text>
-                      <Text fontSize="sm" fontWeight="bold" color={textColor}>
+                      <Text fontSize="xs" fontWeight="bold" color={textColor}>
                         {servico.vendas_mes || 0}
                       </Text>
                     </HStack>
 
                     <HStack justify="space-between">
                       <Text fontSize="xs" color={mutedTextColor}>Faturamento</Text>
-                      <Text fontSize="sm" fontWeight="bold" color="green.500">
+                      <Text fontSize="xs" fontWeight="bold" color="green.500">
                         R$ {servico.faturamento_mes?.toLocaleString() || '0'}
                       </Text>
                     </HStack>
@@ -354,19 +401,19 @@ export const Servicos: React.FC = () => {
                       </HStack>
                       <Progress 
                         value={servico.popularidade || 0} 
-                        size="sm" 
+                        size="xs" 
                         colorScheme={getPopularidadeColor(servico.popularidade || 0)}
                         bg={progressBg}
                       />
                     </Box>
                   </VStack>
 
-                  {/* Ações */}
-                  <HStack spacing={1} justify="flex-end">
+                  {/* Ações - Compactas */}
+                  <HStack spacing={1} justify="center">
                     <IconButton
                       aria-label="Ver detalhes"
                       icon={<ViewIcon />}
-                      size="sm"
+                      size="xs"
                       variant="ghost"
                       colorScheme="blue"
                       onClick={() => handleVerDetalhes(servico)}
@@ -374,7 +421,7 @@ export const Servicos: React.FC = () => {
                     <IconButton
                       aria-label="Editar serviço"
                       icon={<EditIcon />}
-                      size="sm"
+                      size="xs"
                       variant="ghost"
                       colorScheme="rosa"
                       onClick={() => handleEditarServico(servico)}
@@ -382,7 +429,7 @@ export const Servicos: React.FC = () => {
                     <IconButton
                       aria-label="Desativar serviço"
                       icon={<DeleteIcon />}
-                      size="sm"
+                      size="xs"
                       variant="ghost"
                       colorScheme="red"
                       onClick={() => handleExcluirServico(servico)}
@@ -395,74 +442,74 @@ export const Servicos: React.FC = () => {
         </SimpleGrid>
 
         {/* Tabela Detalhada */}
-        <Box bg={tableBg} p={6} borderRadius="lg" shadow="sm" borderColor={borderColor}>
-          <Heading size="md" mb={4} color={tableHeaderColor}>
+        <Box bg={tableBg} p={4} borderRadius="lg" shadow="sm" borderColor={borderColor}>
+          <Heading size="md" mb={3} color={tableHeaderColor}>
             Lista Completa de Serviços
           </Heading>
           
           <TableContainer>
-            <Table variant="simple">
+            <Table variant="simple" size="sm">
               <Thead>
                 <Tr>
-                  <Th color={mutedTextColor}>Serviço</Th>
-                  <Th color={mutedTextColor}>Preço Base</Th>
-                  <Th color={mutedTextColor}>Responsável</Th>
-                  <Th color={mutedTextColor}>Vendas (Mês)</Th>
-                  <Th color={mutedTextColor}>Faturamento (Mês)</Th>
-                  <Th color={mutedTextColor}>Status</Th>
-                  <Th color={mutedTextColor}>Ações</Th>
+                  <Th color={mutedTextColor} fontSize="xs">Serviço</Th>
+                  <Th color={mutedTextColor} fontSize="xs">Preço Base</Th>
+                  <Th color={mutedTextColor} fontSize="xs">Responsável</Th>
+                  <Th color={mutedTextColor} fontSize="xs">Vendas (Mês)</Th>
+                  <Th color={mutedTextColor} fontSize="xs">Faturamento (Mês)</Th>
+                  <Th color={mutedTextColor} fontSize="xs">Status</Th>
+                  <Th color={mutedTextColor} fontSize="xs">Ações</Th>
                 </Tr>
               </Thead>
               <Tbody>
                 {servicos.map((servico) => (
                   <Tr key={servico.id}>
-                    <Td>
+                    <Td py={2}>
                       <Box>
-                        <Text fontWeight="medium" color={textColor}>{servico.nome}</Text>
-                        <Text fontSize="sm" color={mutedTextColor}>
+                        <Text fontWeight="medium" color={textColor} fontSize="sm">{servico.nome}</Text>
+                        <Text fontSize="xs" color={mutedTextColor} noOfLines={1}>
                           {servico.descricao || 'Sem descrição'}
                         </Text>
                       </Box>
                     </Td>
-                    <Td>
-                      <Text fontWeight="bold" color="green.600">
+                    <Td py={2}>
+                      <Text fontWeight="bold" color="green.600" fontSize="sm">
                         R$ {servico.valor_base.toLocaleString()}
                       </Text>
                     </Td>
-                    <Td>
-                      <HStack>
+                    <Td py={2}>
+                      <HStack spacing={1}>
                         <Avatar 
                           size="xs" 
                           name={getNomeFuncionario(servico.funcionario_responsavel_id)}
                           bg="rosa.400"
                           color="white"
                         />
-                        <Text fontSize="sm" color={textColor}>
+                        <Text fontSize="xs" color={textColor} noOfLines={1}>
                           {getNomeFuncionario(servico.funcionario_responsavel_id)}
                         </Text>
                       </HStack>
                     </Td>
-                    <Td>
-                      <Text fontWeight="medium" color="blue.600">
+                    <Td py={2}>
+                      <Text fontWeight="medium" color="blue.600" fontSize="sm">
                         {servico.vendas_mes || 0}
                       </Text>
                     </Td>
-                    <Td>
-                      <Text fontWeight="medium" color="green.600">
+                    <Td py={2}>
+                      <Text fontWeight="medium" color="green.600" fontSize="sm">
                         R$ {servico.faturamento_mes?.toLocaleString() || '0'}
                       </Text>
                     </Td>
-                    <Td>
-                      <Badge colorScheme={servico.ativo ? 'green' : 'red'}>
+                    <Td py={2}>
+                      <Badge colorScheme={servico.ativo ? 'green' : 'red'} fontSize="xs">
                         {servico.ativo ? 'Ativo' : 'Inativo'}
                       </Badge>
                     </Td>
-                    <Td>
+                    <Td py={2}>
                       <HStack spacing={1}>
                         <IconButton
                           aria-label="Ver detalhes"
                           icon={<ViewIcon />}
-                          size="sm"
+                          size="xs"
                           variant="ghost"
                           colorScheme="blue"
                           onClick={() => handleVerDetalhes(servico)}
@@ -470,7 +517,7 @@ export const Servicos: React.FC = () => {
                         <IconButton
                           aria-label="Editar serviço"
                           icon={<EditIcon />}
-                          size="sm"
+                          size="xs"
                           variant="ghost"
                           colorScheme="rosa"
                           onClick={() => handleEditarServico(servico)}
@@ -479,7 +526,7 @@ export const Servicos: React.FC = () => {
                           <IconButton
                             aria-label="Desativar serviço"
                             icon={<DeleteIcon />}
-                            size="sm"
+                            size="xs"
                             variant="ghost"
                             colorScheme="red"
                             onClick={() => handleExcluirServico(servico)}
@@ -493,59 +540,6 @@ export const Servicos: React.FC = () => {
             </Table>
           </TableContainer>
         </Box>
-
-        {/* Cards Estatísticos */}
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-          <Card bg={cardBg} shadow="sm" borderColor={borderColor}>
-            <CardBody>
-              <Stat>
-                <StatLabel color={mutedTextColor}>Total de Serviços</StatLabel>
-                <StatNumber color={textColor}>
-                  {servicos.filter(s => s.ativo).length}
-                </StatNumber>
-                <StatHelpText color={mutedTextColor}>
-                  {servicos.filter(s => !s.ativo).length} inativos
-                </StatHelpText>
-              </Stat>
-            </CardBody>
-          </Card>
-
-          <Card bg={cardBg} shadow="sm" borderColor={borderColor}>
-            <CardBody>
-              <Stat>
-                <StatLabel color={mutedTextColor}>Preço Médio</StatLabel>
-                <StatNumber color="green.500">
-                  R$ {servicos.length > 0 
-                    ? (servicos.reduce((sum, s) => sum + s.valor_base, 0) / servicos.length).toFixed(2)
-                    : '0,00'}
-                </StatNumber>
-                <StatHelpText color={mutedTextColor}>Baseado em todos os serviços</StatHelpText>
-              </Stat>
-            </CardBody>
-          </Card>
-
-          <Card bg={cardBg} shadow="sm" borderColor={borderColor}>
-            <CardBody>
-              <Stat>
-                <StatLabel color={mutedTextColor}>Mais Vendido</StatLabel>
-                <StatNumber color="blue.500">
-                  {servicos.length > 0 
-                    ? servicos.reduce((prev, current) => 
-                        (prev.vendas_mes || 0) > (current.vendas_mes || 0) ? prev : current
-                      ).nome 
-                    : 'N/A'}
-                </StatNumber>
-                <StatHelpText color={mutedTextColor}>
-                  {servicos.length > 0 
-                    ? servicos.reduce((prev, current) => 
-                        (prev.vendas_mes || 0) > (current.vendas_mes || 0) ? prev : current
-                      ).vendas_mes || 0
-                    : 0} vendas este mês
-                </StatHelpText>
-              </Stat>
-            </CardBody>
-          </Card>
-        </SimpleGrid>
       </VStack>
 
       {/* Modais */}

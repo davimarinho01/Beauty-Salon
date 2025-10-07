@@ -119,7 +119,6 @@ export const Pagamentos = () => {
         return isEntrada && noPeriodo;
       }) || [];
 
-      console.log(`Encontradas ${movimentacoes.length} entradas no período`);
 
       setDados(movimentacoes);
       processarAnalises(movimentacoes);

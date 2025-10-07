@@ -24,12 +24,9 @@ class HybridAuthService {
       this.useDatabaseAuth = !error && data !== null
       
       if (this.useDatabaseAuth) {
-        console.log('✅ Sistema de auth: Database (tabela users encontrada)')
       } else {
-        console.log('📝 Sistema de auth: Mock (erro:', error?.message || 'desconhecido', ')')
       }
     } catch (error) {
-      console.log('📝 Usando sistema de autenticação mock (erro na conexão:', error, ')')
       this.useDatabaseAuth = false
     } finally {
       this.initialized = true

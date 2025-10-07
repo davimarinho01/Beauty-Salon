@@ -46,9 +46,10 @@ export const GoogleCalendarConfigModal: React.FC<GoogleCalendarConfigModalProps>
     }
   }, [isOpen]);
 
-  const checkStatus = () => {
+  const checkStatus = async () => {
     setConfigStatus(isGoogleCalendarConfigured() ? 'configured' : 'missing');
-    setIsConnected(googleCalendarService.isConnected());
+    const connected = await googleCalendarService.isConnected();
+    setIsConnected(connected);
   };
 
   const handleConnect = () => {

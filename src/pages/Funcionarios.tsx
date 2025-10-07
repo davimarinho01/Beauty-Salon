@@ -64,6 +64,7 @@ export const Funcionarios: React.FC = () => {
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const tableHeaderColor = useColorModeValue('gray.700', 'gray.200');
   const cardBg = useColorModeValue('white', 'gray.800');
+  const progressBg = useColorModeValue('gray.100', 'gray.700');
 
   const { 
     isOpen: isFormOpen, 
@@ -79,10 +80,8 @@ export const Funcionarios: React.FC = () => {
 
   const carregarFuncionarios = async () => {
     try {
-      console.log('🔄 Carregando funcionários...');
       setLoading(true);
       const dados = await funcionarioService.getAllWithPerformance();
-      console.log('✅ Funcionários carregados:', dados);
       setFuncionarios(dados);
     } catch (error) {
       console.error('❌ Erro ao carregar funcionários:', error);
@@ -243,7 +242,7 @@ export const Funcionarios: React.FC = () => {
                       value={calcularProgressoMeta(funcionario)} 
                       size="sm" 
                       colorScheme="rosa"
-                      bg={useColorModeValue('gray.100', 'gray.700')}
+                      bg={progressBg}
                     />
                   </Box>
 
