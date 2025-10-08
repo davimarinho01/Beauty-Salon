@@ -29,7 +29,9 @@ import {
   Flex,
   Alert,
   AlertIcon,
-  useToast
+  useToast,
+  useBreakpointValue,
+  Divider
 } from '@chakra-ui/react';
 import { 
   FaChartLine, 
@@ -70,6 +72,9 @@ export const Extrato = () => {
   const [loading, setLoading] = useState(true);
   const [exportingPDF, setExportingPDF] = useState(false);
   const toast = useToast();
+
+  // Responsividade
+  const isMobile = useBreakpointValue({ base: true, md: false });
 
   // Cores do tema
   const cardBg = useColorModeValue('white', 'gray.800');
@@ -230,16 +235,21 @@ export const Extrato = () => {
     };
   }).sort((a, b) => b.faturamento - a.faturamento);
 
-  // Serviços mais populares
+  // Serviços mais populares - CORRIGIDO para usar movimentações financeiras
   const servicosPopulares: ServicoPopular[] = servicos.map(servico => {
-    const agendamentosServico = agendamentosFiltrados.filter(a => 
-      a.servico_id === servico.id
+    // Buscar movimentações relacionadas a este serviço
+    const movimentacaoesServico = movimentacoesFiltradas.filter(m => 
+      m.tipo === 'ENTRADA' && (
+        m.servico_id === servico.id || 
+        m.servico?.id === servico.id ||
+        m.descricao?.toLowerCase().includes(servico.nome.toLowerCase())
+      )
     );
 
-    const quantidade = agendamentosServico.length;
-    const faturamento = quantidade * servico.valor_base;
-    const percentual = agendamentosFiltrados.length > 0 
-      ? (quantidade / agendamentosFiltrados.length * 100)
+    const quantidade = movimentacaoesServico.length;
+    const faturamento = movimentacaoesServico.reduce((sum, m) => sum + m.valor, 0);
+    const percentual = servicosRealizados > 0 
+      ? (quantidade / servicosRealizados * 100)
       : 0;
 
     return {
@@ -462,55 +472,115 @@ export const Extrato = () => {
             </Heading>
             
             {relatorioFuncionarios.length > 0 ? (
-              <TableContainer>
-                <Table variant="simple">
-                  <Thead>
-                    <Tr>
-                      <Th>Funcionário</Th>
-                      <Th isNumeric>Serviços</Th>
-                      <Th isNumeric>Faturamento</Th>
-                      <Th isNumeric>Comissão</Th>
-                      <Th>Meta</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
-                    {relatorioFuncionarios.map((relatorio) => (
-                      <Tr key={relatorio.funcionario.id}>
-                        <Td>
-                          <VStack align="start" spacing={1}>
-                            <Text fontWeight="bold">
-                              {relatorio.funcionario.nome} {relatorio.funcionario.sobrenome}
+              isMobile ? (
+                // Layout Mobile - Cards
+                <VStack spacing={3} align="stretch">
+                  {relatorioFuncionarios.map((relatorio) => (
+                    <Card key={relatorio.funcionario.id} size="sm" variant="outline">
+                      <CardBody p={4}>
+                        <VStack align="stretch" spacing={3}>
+                          {/* Header do funcionário */}
+                          <HStack justify="space-between" align="center">
+                            <VStack align="start" spacing={1}>
+                              <Text fontWeight="bold" fontSize="md">
+                                {relatorio.funcionario.nome} {relatorio.funcionario.sobrenome}
+                              </Text>
+                              <Badge colorScheme="gray" size="sm">
+                                {relatorio.funcionario.funcao}
+                              </Badge>
+                            </VStack>
+                            <Text fontSize="lg" fontWeight="bold" color="green.500">
+                              {formatCurrency(relatorio.faturamento)}
                             </Text>
-                            <Badge colorScheme="gray" size="sm">
-                              {relatorio.funcionario.funcao}
-                            </Badge>
+                          </HStack>
+                          
+                          {/* Métricas */}
+                          <VStack align="stretch" spacing={2}>
+                            <HStack justify="space-between">
+                              <Text fontSize="sm" color="gray.600">Serviços realizados:</Text>
+                              <Text fontSize="sm" fontWeight="bold">
+                                {relatorio.totalServicos}
+                              </Text>
+                            </HStack>
+                            
+                            <HStack justify="space-between">
+                              <Text fontSize="sm" color="gray.600">Comissão:</Text>
+                              <Text fontSize="sm" fontWeight="bold" color="blue.500">
+                                {formatCurrency(relatorio.comissao)}
+                              </Text>
+                            </HStack>
+                            
+                            <VStack align="stretch" spacing={1}>
+                              <HStack justify="space-between">
+                                <Text fontSize="sm" color="gray.600">Meta do mês:</Text>
+                                <Text fontSize="sm" fontWeight="bold">
+                                  {relatorio.percentualMeta.toFixed(0)}%
+                                </Text>
+                              </HStack>
+                              <Progress 
+                                value={Math.min(relatorio.percentualMeta, 100)} 
+                                colorScheme={relatorio.percentualMeta >= 100 ? 'green' : 'yellow'}
+                                size="sm"
+                              />
+                            </VStack>
                           </VStack>
-                        </Td>
-                        <Td isNumeric>{relatorio.totalServicos}</Td>
-                        <Td isNumeric color="green.500" fontWeight="bold">
-                          {formatCurrency(relatorio.faturamento)}
-                        </Td>
-                        <Td isNumeric color="blue.500">
-                          {formatCurrency(relatorio.comissao)}
-                        </Td>
-                        <Td>
-                          <VStack align="start" spacing={1}>
-                            <Progress 
-                              value={Math.min(relatorio.percentualMeta, 100)} 
-                              colorScheme={relatorio.percentualMeta >= 100 ? 'green' : 'yellow'}
-                              size="sm"
-                              w="100px"
-                            />
-                            <Text fontSize="xs">
-                              {relatorio.percentualMeta.toFixed(0)}% da meta
-                            </Text>
-                          </VStack>
-                        </Td>
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  ))}
+                </VStack>
+              ) : (
+                // Layout Desktop - Tabela
+                <TableContainer>
+                  <Table variant="simple">
+                    <Thead>
+                      <Tr>
+                        <Th>Funcionário</Th>
+                        <Th isNumeric>Serviços</Th>
+                        <Th isNumeric>Faturamento</Th>
+                        <Th isNumeric>Comissão</Th>
+                        <Th>Meta</Th>
                       </Tr>
-                    ))}
-                  </Tbody>
-                </Table>
-              </TableContainer>
+                    </Thead>
+                    <Tbody>
+                      {relatorioFuncionarios.map((relatorio) => (
+                        <Tr key={relatorio.funcionario.id}>
+                          <Td>
+                            <VStack align="start" spacing={1}>
+                              <Text fontWeight="bold">
+                                {relatorio.funcionario.nome} {relatorio.funcionario.sobrenome}
+                              </Text>
+                              <Badge colorScheme="gray" size="sm">
+                                {relatorio.funcionario.funcao}
+                              </Badge>
+                            </VStack>
+                          </Td>
+                          <Td isNumeric>{relatorio.totalServicos}</Td>
+                          <Td isNumeric color="green.500" fontWeight="bold">
+                            {formatCurrency(relatorio.faturamento)}
+                          </Td>
+                          <Td isNumeric color="blue.500">
+                            {formatCurrency(relatorio.comissao)}
+                          </Td>
+                          <Td>
+                            <VStack align="start" spacing={1}>
+                              <Progress 
+                                value={Math.min(relatorio.percentualMeta, 100)} 
+                                colorScheme={relatorio.percentualMeta >= 100 ? 'green' : 'yellow'}
+                                size="sm"
+                                w="100px"
+                              />
+                              <Text fontSize="xs">
+                                {relatorio.percentualMeta.toFixed(0)}% da meta
+                              </Text>
+                            </VStack>
+                          </Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                </TableContainer>
+              )
             ) : (
               <Text color="gray.500">Nenhum dado encontrado para o período selecionado.</Text>
             )}
@@ -571,48 +641,99 @@ export const Extrato = () => {
             </Heading>
             
             {movimentacoesFiltradas.length > 0 ? (
-              <TableContainer>
-                <Table variant="simple" size="sm">
-                  <Thead>
-                    <Tr>
-                      <Th>Data</Th>
-                      <Th>Tipo</Th>
-                      <Th>Método</Th>
-                      <Th>Descrição</Th>
-                      <Th isNumeric>Valor</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
-                    {movimentacoesFiltradas
-                      .sort((a, b) => new Date(b.data_movimentacao).getTime() - new Date(a.data_movimentacao).getTime())
-                      .slice(0, 10)
-                      .map((movimentacao) => (
-                        <Tr key={movimentacao.id}>
-                          <Td>{new Date(movimentacao.data_movimentacao).toLocaleDateString()}</Td>
-                          <Td>
-                            <Badge 
-                              colorScheme={movimentacao.tipo === 'ENTRADA' ? 'green' : 'red'}
-                              size="sm"
-                            >
-                              {movimentacao.tipo}
-                            </Badge>
-                          </Td>
-                          <Td>{movimentacao.metodo_pagamento || 'N/A'}</Td>
-                          <Td>{movimentacao.descricao}</Td>
-                          <Td isNumeric>
-                            <Text 
-                              color={movimentacao.tipo === 'ENTRADA' ? 'green.500' : 'red.500'}
-                              fontWeight="bold"
-                            >
-                              {movimentacao.tipo === 'ENTRADA' ? '+' : '-'}
-                              {formatCurrency(movimentacao.valor)}
+              isMobile ? (
+                // Layout Mobile - Cards
+                <VStack spacing={3} align="stretch">
+                  {movimentacoesFiltradas
+                    .sort((a, b) => new Date(b.data_movimentacao).getTime() - new Date(a.data_movimentacao).getTime())
+                    .slice(0, 10)
+                    .map((movimentacao) => (
+                      <Card key={movimentacao.id} size="sm" variant="outline">
+                        <CardBody p={3}>
+                          <VStack align="stretch" spacing={2}>
+                            {/* Header */}
+                            <HStack justify="space-between" align="center">
+                              <Badge 
+                                colorScheme={movimentacao.tipo === 'ENTRADA' ? 'green' : 'red'}
+                                variant="solid"
+                                fontSize="xs"
+                              >
+                                {movimentacao.tipo}
+                              </Badge>
+                              <Text fontSize="xs" color="gray.500">
+                                {new Date(movimentacao.data_movimentacao).toLocaleDateString()}
+                              </Text>
+                            </HStack>
+                            
+                            {/* Descrição */}
+                            <Text fontSize="sm" fontWeight="medium">
+                              {movimentacao.descricao}
                             </Text>
-                          </Td>
-                        </Tr>
-                      ))}
-                  </Tbody>
-                </Table>
-              </TableContainer>
+                            
+                            {/* Detalhes */}
+                            <HStack justify="space-between" align="center">
+                              <Text fontSize="xs" color="gray.600">
+                                {movimentacao.metodo_pagamento || 'N/A'}
+                              </Text>
+                              <Text 
+                                fontSize="md"
+                                fontWeight="bold"
+                                color={movimentacao.tipo === 'ENTRADA' ? 'green.500' : 'red.500'}
+                              >
+                                {movimentacao.tipo === 'ENTRADA' ? '+' : '-'}
+                                {formatCurrency(movimentacao.valor)}
+                              </Text>
+                            </HStack>
+                          </VStack>
+                        </CardBody>
+                      </Card>
+                    ))}
+                </VStack>
+              ) : (
+                // Layout Desktop - Tabela
+                <TableContainer>
+                  <Table variant="simple" size="sm">
+                    <Thead>
+                      <Tr>
+                        <Th>Data</Th>
+                        <Th>Tipo</Th>
+                        <Th>Método</Th>
+                        <Th>Descrição</Th>
+                        <Th isNumeric>Valor</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {movimentacoesFiltradas
+                        .sort((a, b) => new Date(b.data_movimentacao).getTime() - new Date(a.data_movimentacao).getTime())
+                        .slice(0, 10)
+                        .map((movimentacao) => (
+                          <Tr key={movimentacao.id}>
+                            <Td>{new Date(movimentacao.data_movimentacao).toLocaleDateString()}</Td>
+                            <Td>
+                              <Badge 
+                                colorScheme={movimentacao.tipo === 'ENTRADA' ? 'green' : 'red'}
+                                size="sm"
+                              >
+                                {movimentacao.tipo}
+                              </Badge>
+                            </Td>
+                            <Td>{movimentacao.metodo_pagamento || 'N/A'}</Td>
+                            <Td>{movimentacao.descricao}</Td>
+                            <Td isNumeric>
+                              <Text 
+                                color={movimentacao.tipo === 'ENTRADA' ? 'green.500' : 'red.500'}
+                                fontWeight="bold"
+                              >
+                                {movimentacao.tipo === 'ENTRADA' ? '+' : '-'}
+                                {formatCurrency(movimentacao.valor)}
+                              </Text>
+                            </Td>
+                          </Tr>
+                        ))}
+                    </Tbody>
+                  </Table>
+                </TableContainer>
+              )
             ) : (
               <Text color="gray.500">Nenhuma movimentação encontrada para o período selecionado.</Text>
             )}

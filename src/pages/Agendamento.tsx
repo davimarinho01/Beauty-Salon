@@ -21,7 +21,19 @@ import {
   Select,
   Grid,
   GridItem,
-  useColorModeValue
+  useColorModeValue,
+  useBreakpointValue,
+  Collapse,
+  Flex,
+  Wrap,
+  WrapItem,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  Divider
 } from '@chakra-ui/react';
 import { AddIcon, ChevronDownIcon, CalendarIcon, RepeatIcon } from '@chakra-ui/icons';
 import { FaGoogle } from 'react-icons/fa';
@@ -92,7 +104,15 @@ export const Agendamento: React.FC = () => {
   const [semanaAtual, setSemanaAtual] = useState(new Date());
   const [funcionarioFiltro, setFuncionarioFiltro] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [agendamentoSelecionado, setAgendamentoSelecionado] = useState<Agendamento | null>(null);
   const toast = useToast();
+
+  // Responsividade
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const calendarColumns = useBreakpointValue({ 
+    base: `50px repeat(7, 1fr)`, 
+    md: `80px repeat(7, 1fr)` 
+  });
 
   // Cores do modo escuro/claro
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -113,6 +133,7 @@ export const Agendamento: React.FC = () => {
 
   const { isOpen: isFormOpen, onOpen: onFormOpen, onClose: onFormClose } = useDisclosure();
   const { isOpen: isGoogleConfigOpen, onOpen: onGoogleConfigOpen, onClose: onGoogleConfigClose } = useDisclosure();
+  const { isOpen: isActionsOpen, onOpen: onActionsOpen, onClose: onActionsClose } = useDisclosure();
 
   // Verificar conexão Google Calendar na inicialização
   useEffect(() => {
@@ -410,91 +431,184 @@ export const Agendamento: React.FC = () => {
   const diasSemana = getDiasSemana();
 
   return (
-    <Box p={6}>
-      <VStack spacing={6} align="stretch">
+    <Box p={{ base: 3, md: 6 }}>
+      <VStack spacing={{ base: 4, md: 6 }} align="stretch">
         {/* Cabeçalho */}
-        <HStack justify="space-between" align="center">
-          <Heading size="lg" color={headingColor}>
+        <VStack spacing={3} align="stretch">
+          <Heading size={{ base: 'md', md: 'lg' }} color={headingColor} textAlign={{ base: 'center', md: 'left' }}>
             Agenda da Semana
           </Heading>
-          <HStack spacing={3}>
-            <Select
-              placeholder="Todos os funcionários"
-              value={funcionarioFiltro}
-              onChange={(e) => setFuncionarioFiltro(e.target.value)}
-              maxW="300px"
-              bg={selectBg}
-              color={selectColor}
-              borderColor={selectBorderColor}
-              _hover={{
-                borderColor: selectHoverBorderColor
-              }}
-            >
-              {funcionarios.map((funcionario) => (
-                <option key={funcionario.id} value={funcionario.id}>
-                  {funcionario.nome} {funcionario.sobrenome}
-                </option>
-              ))}
-            </Select>
-            <Button
-              leftIcon={<AddIcon />}
-              colorScheme="rosa"
-              onClick={handleNovoAgendamento}
-            >
-              Novo Agendamento
-            </Button>
-            <Button
-              leftIcon={<FaGoogle />}
-              colorScheme={isGoogleConnected ? "green" : "red"}
-              variant={isGoogleConnected ? "solid" : "outline"}
-              onClick={onGoogleConfigOpen}
-            >
-              {isGoogleConnected ? "Google Calendar Conectado" : "Conectar Google Calendar"}
-            </Button>
-            {isGoogleConnected && (
-              <Button
-                leftIcon={<RepeatIcon />}
-                colorScheme="blue"
-                variant="outline"
-                onClick={handleSincronizarExclusoes}
-                isLoading={loading}
-                loadingText="Atualizando..."
-              >
-                Atualizar
-              </Button>
-            )}
-          </HStack>
-        </HStack>
+          
+          {/* Controles Mobile/Desktop */}
+          {isMobile ? (
+            <VStack spacing={3}>
+              {/* Filtro e botões principais */}
+              <HStack w="full" spacing={2}>
+                <Select
+                  placeholder="Todos"
+                  value={funcionarioFiltro}
+                  onChange={(e) => setFuncionarioFiltro(e.target.value)}
+                  size="sm"
+                  bg={selectBg}
+                  color={selectColor}
+                  borderColor={selectBorderColor}
+                  flex={1}
+                >
+                  {funcionarios.map((funcionario) => (
+                    <option key={funcionario.id} value={funcionario.id}>
+                      {funcionario.nome}
+                    </option>
+                  ))}
+                </Select>
+                <IconButton
+                  icon={<AddIcon />}
+                  colorScheme="rosa"
+                  onClick={handleNovoAgendamento}
+                  size="sm"
+                  aria-label="Novo agendamento"
+                />
+              </HStack>
+              
+              {/* Botões do Google Calendar */}
+              <Wrap spacing={2} justify="center" w="full">
+                <WrapItem>
+                  <Button
+                    leftIcon={<FaGoogle />}
+                    colorScheme={isGoogleConnected ? "green" : "red"}
+                    variant={isGoogleConnected ? "solid" : "outline"}
+                    onClick={onGoogleConfigOpen}
+                    size="sm"
+                    fontSize="xs"
+                  >
+                    {isGoogleConnected ? "Google ✓" : "Conectar"}
+                  </Button>
+                </WrapItem>
+                {isGoogleConnected && (
+                  <WrapItem>
+                    <Button
+                      leftIcon={<RepeatIcon />}
+                      colorScheme="blue"
+                      variant="outline"
+                      onClick={handleSincronizarExclusoes}
+                      isLoading={loading}
+                      loadingText="..."
+                      size="sm"
+                      fontSize="xs"
+                    >
+                      Sync
+                    </Button>
+                  </WrapItem>
+                )}
+              </Wrap>
+            </VStack>
+          ) : (
+            <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
+              <HStack spacing={3} flexWrap="wrap">
+                <Select
+                  placeholder="Todos os funcionários"
+                  value={funcionarioFiltro}
+                  onChange={(e) => setFuncionarioFiltro(e.target.value)}
+                  maxW="300px"
+                  size="md"
+                  bg={selectBg}
+                  color={selectColor}
+                  borderColor={selectBorderColor}
+                  _hover={{
+                    borderColor: selectHoverBorderColor
+                  }}
+                >
+                  {funcionarios.map((funcionario) => (
+                    <option key={funcionario.id} value={funcionario.id}>
+                      {funcionario.nome} {funcionario.sobrenome}
+                    </option>
+                  ))}
+                </Select>
+                <Button
+                  leftIcon={<AddIcon />}
+                  colorScheme="rosa"
+                  onClick={handleNovoAgendamento}
+                  size="md"
+                >
+                  Novo Agendamento
+                </Button>
+                <Button
+                  leftIcon={<FaGoogle />}
+                  colorScheme={isGoogleConnected ? "green" : "red"}
+                  variant={isGoogleConnected ? "solid" : "outline"}
+                  onClick={onGoogleConfigOpen}
+                  size="md"
+                >
+                  {isGoogleConnected ? "Google Calendar Conectado" : "Conectar Google Calendar"}
+                </Button>
+                {isGoogleConnected && (
+                  <Button
+                    leftIcon={<RepeatIcon />}
+                    colorScheme="blue"
+                    variant="outline"
+                    onClick={handleSincronizarExclusoes}
+                    isLoading={loading}
+                    loadingText="Atualizando..."
+                    size="md"
+                  >
+                    Atualizar
+                  </Button>
+                )}
+              </HStack>
+            </HStack>
+          )}
+        </VStack>
 
         {/* Navegação da Semana */}
-        <HStack justify="center" spacing={4}>
-          <Button onClick={() => navegarSemana('anterior')} variant="outline">
-            ← Semana Anterior
-          </Button>
-          <Text fontWeight="bold" fontSize="lg">
-            {inicioSemana.toLocaleDateString()} - {fimSemana.toLocaleDateString()}
-          </Text>
-          <Button onClick={() => navegarSemana('proxima')} variant="outline">
-            Próxima Semana →
-          </Button>
-        </HStack>
+        <VStack spacing={2}>
+          <Flex justify="space-between" align="center" w="full">
+            <IconButton
+              onClick={() => navegarSemana('anterior')} 
+              variant="outline"
+              size={{ base: 'sm', md: 'md' }}
+              icon={<Text>←</Text>}
+              aria-label="Semana anterior"
+            />
+            <VStack spacing={0}>
+              <Text fontWeight="bold" fontSize={{ base: 'sm', md: 'lg' }} textAlign="center">
+                {inicioSemana.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} - {fimSemana.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+              </Text>
+              {!isMobile && (
+                <Text fontSize="sm" color={mutedTextColor}>
+                  {inicioSemana.toLocaleDateString('pt-BR', { year: 'numeric' })}
+                </Text>
+              )}
+            </VStack>
+            <IconButton
+              onClick={() => navegarSemana('proxima')} 
+              variant="outline"
+              size={{ base: 'sm', md: 'md' }}
+              icon={<Text>→</Text>}
+              aria-label="Próxima semana"
+            />
+          </Flex>
+        </VStack>
 
         {/* Calendário Semanal */}
         <Box bg={bgColor} borderRadius="lg" shadow="sm" overflow="hidden" borderWidth="1px" borderColor={borderColor}>
           {/* Cabeçalho dos Dias */}
-          <Grid templateColumns={`100px repeat(7, 1fr)`} gap={0} borderBottom="1px" borderColor={borderColor}>
-            <GridItem p={3} bg={headerBg} borderRight="1px" borderColor={borderColor}>
-              <Text fontWeight="bold" fontSize="sm" color={mutedTextColor}>
-                Horário
+          <Grid 
+            templateColumns={calendarColumns} 
+            gap={0} 
+            borderBottom="1px" 
+            borderColor={borderColor}
+          >
+            <GridItem p={{ base: 1, md: 3 }} bg={headerBg} borderRight="1px" borderColor={borderColor}>
+              <Text fontWeight="bold" fontSize={{ base: 'xs', md: 'sm' }} color={mutedTextColor}>
+                {isMobile ? 'H' : 'Horário'}
               </Text>
             </GridItem>
             {diasSemana.map((dia, index) => (
-              <GridItem key={index} p={3} bg={headerBg} borderRight="1px" borderColor={borderColor}>
-                <VStack spacing={1}>
-                  <Text fontWeight="bold" fontSize="sm" color={textColor}>
-                    {DIAS_SEMANA[dia.getDay()]}
+              <GridItem key={index} p={{ base: 1, md: 3 }} bg={headerBg} borderRight="1px" borderColor={borderColor}>
+                <VStack spacing={0}>
+                  <Text fontWeight="bold" fontSize={{ base: '2xs', md: 'sm' }} color={textColor}>
+                    {isMobile ? DIAS_SEMANA[dia.getDay()].substring(0, 1) : DIAS_SEMANA[dia.getDay()]}
                   </Text>
-                  <Text fontSize="xs" color={mutedTextColor}>
+                  <Text fontSize={{ base: '2xs', md: 'xs' }} color={mutedTextColor}>
                     {dia.getDate()}/{dia.getMonth() + 1}
                   </Text>
                 </VStack>
@@ -504,10 +618,16 @@ export const Agendamento: React.FC = () => {
 
           {/* Grade de Horários */}
           {HORARIOS_FUNCIONAMENTO.map((hora) => (
-            <Grid key={hora} templateColumns={`100px repeat(7, 1fr)`} gap={0} borderBottom="1px" borderColor={lightBorderColor}>
-              <GridItem p={3} bg={headerBg} borderRight="1px" borderColor={borderColor}>
-                <Text fontSize="sm" fontWeight="medium" color={textColor}>
-                  {hora}
+            <Grid 
+              key={hora} 
+              templateColumns={calendarColumns} 
+              gap={0} 
+              borderBottom="1px" 
+              borderColor={lightBorderColor}
+            >
+              <GridItem p={{ base: 1, md: 3 }} bg={headerBg} borderRight="1px" borderColor={borderColor}>
+                <Text fontSize={{ base: '2xs', md: 'sm' }} fontWeight="medium" color={textColor}>
+                  {isMobile ? hora.substring(0, 2) : hora}
                 </Text>
               </GridItem>
               {diasSemana.map((dia, diaIndex) => {
@@ -515,13 +635,13 @@ export const Agendamento: React.FC = () => {
                 return (
                   <GridItem 
                     key={diaIndex} 
-                    p={1} 
+                    p={{ base: 0.5, md: 1 }} 
                     borderRight="1px" 
                     borderColor={borderColor}
-                    minH="60px"
+                    minH={{ base: "60px", md: "60px" }}
                     bg={eventosDaHora.length > 0 ? cellWithAgendamentoBg : cellBg}
                   >
-                    <VStack spacing={1} h="full">
+                    <VStack spacing={{ base: 0.5, md: 1 }} h="full">
                       {eventosDaHora.map((evento) => {
                         // Type guard para agendamentos
                         if ('cliente_nome' in evento && 'status' in evento) {
@@ -530,115 +650,166 @@ export const Agendamento: React.FC = () => {
                               key={evento.id}
                               size="sm"
                               w="full"
-                              bg={`${getStatusColor(evento.status)}.50`}
-                              borderLeft="3px solid"
-                              borderLeftColor={`${getStatusColor(evento.status)}.400`}
+                              bg={`${getStatusColor(evento.status)}.100`}
+                              borderLeft="2px solid"
+                              borderLeftColor={`${getStatusColor(evento.status)}.500`}
+                              cursor="pointer"
+                              onClick={() => isMobile ? (() => {
+                                setAgendamentoSelecionado(evento);
+                                onActionsOpen();
+                              })() : undefined}
+                              _hover={isMobile ? { 
+                                bg: `${getStatusColor(evento.status)}.200`,
+                                transform: 'scale(1.02)'
+                              } : {}}
+                              transition="all 0.2s"
                             >
-                              <CardBody p={2}>
-                                <VStack spacing={1} align="flex-start">
-                                  <Text fontSize="xs" fontWeight="bold" noOfLines={1} color={textColor}>
-                                    {evento.cliente_nome}
-                                  </Text>
-                                  
-                                  {/* Múltiplos Serviços */}
-                                  {evento.servicos && evento.servicos.length > 0 ? (
-                                    <Box>
-                                      {evento.servicos.slice(0, 2).map((agendServ: any, index: number) => (
-                                        <Text key={index} fontSize="xs" color={mutedTextColor} noOfLines={1}>
-                                          {index === 0 ? '🎯' : '+'} {agendServ.servico?.nome}
-                                        </Text>
-                                      ))}
-                                      {evento.servicos.length > 2 && (
-                                        <Text fontSize="xs" color="blue.500">
-                                          +{evento.servicos.length - 2} serviços
+                              <CardBody p={{ base: 1.5, md: 2 }}>
+                                {isMobile ? (
+                                  // Layout ultra-simplificado para mobile
+                                  <VStack spacing={1} align="flex-start" w="full">
+                                    <Text 
+                                      fontSize="xs" 
+                                      fontWeight="bold" 
+                                      noOfLines={1} 
+                                      color={textColor}
+                                      w="full"
+                                    >
+                                      {evento.cliente_nome}
+                                    </Text>
+                                    <HStack justify="space-between" w="full">
+                                      <Badge 
+                                        size="xs" 
+                                        colorScheme={getStatusColor(evento.status)}
+                                        variant="solid"
+                                      >
+                                        {evento.status === 'AGENDADO' ? 'A' : 
+                                         evento.status === 'CONFIRMADO' ? 'C' : 
+                                         evento.status === 'REALIZADO' ? 'R' : 'X'}
+                                      </Badge>
+                                      {evento.horario_fim && (
+                                        <Text fontSize="2xs" color={mutedTextColor}>
+                                          {evento.horario.substring(0, 2)}-{evento.horario_fim.substring(0, 2)}
                                         </Text>
                                       )}
-                                    </Box>
-                                  ) : (
-                                    <Text fontSize="xs" color={mutedTextColor} noOfLines={1}>
-                                      {evento.servico?.nome || 'Serviço'}
+                                    </HStack>
+                                    {(evento.servicos && evento.servicos.length > 0) || evento.servico ? (
+                                      <Text fontSize="2xs" color={mutedTextColor} noOfLines={1} w="full">
+                                        {evento.servicos && evento.servicos.length > 0 
+                                          ? evento.servicos[0].servico?.nome || 'Serviço'
+                                          : evento.servico?.nome || 'Serviço'
+                                        }
+                                        {evento.servicos && evento.servicos.length > 1 && ` +${evento.servicos.length - 1}`}
+                                      </Text>
+                                    ) : null}
+                                  </VStack>
+                                ) : (
+                                  // Layout completo para desktop
+                                  <VStack spacing={1} align="flex-start">
+                                    <Text fontSize="xs" fontWeight="bold" noOfLines={1} color={textColor}>
+                                      {evento.cliente_nome}
                                     </Text>
-                                  )}
-                                  
-                                  {evento.horario_fim && (
-                                    <Text fontSize="xs" color="blue.500" noOfLines={1}>
-                                      ⏰ {evento.horario.substring(0, 5)} - {evento.horario_fim.substring(0, 5)}
-                                    </Text>
-                                  )}
-                                  
-                                  {/* Múltiplos Funcionários */}
-                                  <HStack spacing={1} flexWrap="wrap">
-                                    {evento.funcionarios && evento.funcionarios.length > 0 ? (
-                                      evento.funcionarios.slice(0, 2).map((agendFunc: any, index: number) => (
-                                        <HStack key={index} spacing={1}>
+                                    
+                                    {/* Múltiplos Serviços */}
+                                    {evento.servicos && evento.servicos.length > 0 ? (
+                                      <Box>
+                                        {evento.servicos.slice(0, 2).map((agendServ: any, index: number) => (
+                                          <Text key={index} fontSize="xs" color={mutedTextColor} noOfLines={1}>
+                                            {index === 0 ? '🎯' : '+'} {agendServ.servico?.nome}
+                                          </Text>
+                                        ))}
+                                        {evento.servicos.length > 2 && (
+                                          <Text fontSize="xs" color="blue.500">
+                                            +{evento.servicos.length - 2} serviços
+                                          </Text>
+                                        )}
+                                      </Box>
+                                    ) : (
+                                      <Text fontSize="xs" color={mutedTextColor} noOfLines={1}>
+                                        {evento.servico?.nome || 'Serviço'}
+                                      </Text>
+                                    )}
+                                    
+                                    {evento.horario_fim && (
+                                      <Text fontSize="xs" color="blue.500" noOfLines={1}>
+                                        ⏰ {evento.horario.substring(0, 5)} - {evento.horario_fim.substring(0, 5)}
+                                      </Text>
+                                    )}
+                                    
+                                    {/* Múltiplos Funcionários */}
+                                    <HStack spacing={1} flexWrap="wrap">
+                                      {evento.funcionarios && evento.funcionarios.length > 0 ? (
+                                        evento.funcionarios.slice(0, 2).map((agendFunc: any, index: number) => (
+                                          <HStack key={index} spacing={1}>
+                                            <Avatar 
+                                              size="2xs" 
+                                              name={`${agendFunc.funcionario?.nome} ${agendFunc.funcionario?.sobrenome}`}
+                                              bg={agendFunc.responsavel_principal ? "rosa.400" : "gray.400"}
+                                            />
+                                            <Text fontSize="xs" color={mutedTextColor}>
+                                              {agendFunc.funcionario?.nome}
+                                              {agendFunc.responsavel_principal && ' 👑'}
+                                            </Text>
+                                          </HStack>
+                                        ))
+                                      ) : evento.funcionario ? (
+                                        <HStack spacing={1}>
                                           <Avatar 
                                             size="2xs" 
-                                            name={`${agendFunc.funcionario?.nome} ${agendFunc.funcionario?.sobrenome}`}
-                                            bg={agendFunc.responsavel_principal ? "rosa.400" : "gray.400"}
+                                            name={`${evento.funcionario?.nome} ${evento.funcionario?.sobrenome}`}
+                                            bg="rosa.400"
                                           />
                                           <Text fontSize="xs" color={mutedTextColor}>
-                                            {agendFunc.funcionario?.nome}
-                                            {agendFunc.responsavel_principal && ' 👑'}
+                                            {evento.funcionario?.nome}
                                           </Text>
                                         </HStack>
-                                      ))
-                                    ) : evento.funcionario ? (
-                                      <HStack spacing={1}>
-                                        <Avatar 
-                                          size="2xs" 
-                                          name={`${evento.funcionario?.nome} ${evento.funcionario?.sobrenome}`}
-                                          bg="rosa.400"
-                                        />
-                                        <Text fontSize="xs" color={mutedTextColor}>
-                                          {evento.funcionario?.nome}
+                                      ) : (
+                                        <Text fontSize="xs" color={mutedTextColor} fontStyle="italic">
+                                          Sem funcionário
                                         </Text>
-                                      </HStack>
-                                    ) : (
-                                      <Text fontSize="xs" color={mutedTextColor} fontStyle="italic">
-                                        Sem funcionário
-                                      </Text>
-                                    )}
-                                    {evento.funcionarios && evento.funcionarios.length > 2 && (
-                                      <Text fontSize="xs" color="blue.500">
-                                        +{evento.funcionarios.length - 2}
-                                      </Text>
-                                    )}
-                                  </HStack>
-                                  <HStack justify="space-between" w="full">
-                                    <Badge size="xs" colorScheme={getStatusColor(evento.status)}>
-                                      {getStatusLabel(evento.status)}
-                                    </Badge>
-                                    <Menu>
-                                      <MenuButton
-                                        as={IconButton}
-                                        icon={<ChevronDownIcon />}
-                                        size="xs"
-                                        variant="ghost"
-                                      />
-                                      <MenuList fontSize="sm">
-                                        <MenuItem onClick={() => handleAlterarStatus(evento.id, 'AGENDADO')}>
-                                          Marcar como Agendado
-                                        </MenuItem>
-                                        <MenuItem onClick={() => handleAlterarStatus(evento.id, 'CONFIRMADO')}>
-                                          Marcar como Confirmado
-                                        </MenuItem>
-                                        <MenuItem onClick={() => handleAlterarStatus(evento.id, 'REALIZADO')}>
-                                          Marcar como Realizado
-                                        </MenuItem>
-                                        <MenuItem onClick={() => handleAlterarStatus(evento.id, 'CANCELADO')}>
-                                          Cancelar
-                                        </MenuItem>
-                                        <MenuItem 
-                                          onClick={() => handleExcluirAgendamento(evento.id)}
-                                          color="red.500"
-                                          _hover={{ bg: 'red.50' }}
-                                        >
-                                          Excluir Agendamento
-                                        </MenuItem>
-                                      </MenuList>
-                                    </Menu>
-                                  </HStack>
-                                </VStack>
+                                      )}
+                                      {evento.funcionarios && evento.funcionarios.length > 2 && (
+                                        <Text fontSize="xs" color="blue.500">
+                                          +{evento.funcionarios.length - 2}
+                                        </Text>
+                                      )}
+                                    </HStack>
+                                    <HStack justify="space-between" w="full">
+                                      <Badge size="xs" colorScheme={getStatusColor(evento.status)}>
+                                        {getStatusLabel(evento.status)}
+                                      </Badge>
+                                      <Menu>
+                                        <MenuButton
+                                          as={IconButton}
+                                          icon={<ChevronDownIcon />}
+                                          size="xs"
+                                          variant="ghost"
+                                        />
+                                        <MenuList fontSize="sm">
+                                          <MenuItem onClick={() => handleAlterarStatus(evento.id, 'AGENDADO')}>
+                                            Marcar como Agendado
+                                          </MenuItem>
+                                          <MenuItem onClick={() => handleAlterarStatus(evento.id, 'CONFIRMADO')}>
+                                            Marcar como Confirmado
+                                          </MenuItem>
+                                          <MenuItem onClick={() => handleAlterarStatus(evento.id, 'REALIZADO')}>
+                                            Marcar como Realizado
+                                          </MenuItem>
+                                          <MenuItem onClick={() => handleAlterarStatus(evento.id, 'CANCELADO')}>
+                                            Cancelar
+                                          </MenuItem>
+                                          <MenuItem 
+                                            onClick={() => handleExcluirAgendamento(evento.id)}
+                                            color="red.500"
+                                            _hover={{ bg: 'red.50' }}
+                                          >
+                                            Excluir Agendamento
+                                          </MenuItem>
+                                        </MenuList>
+                                      </Menu>
+                                    </HStack>
+                                  </VStack>
+                                )}
                               </CardBody>
                             </Card>
                           );
@@ -651,22 +822,46 @@ export const Agendamento: React.FC = () => {
                               key={evento.id}
                               size="sm"
                               w="full"
-                              bg="blue.50"
-                              borderLeft="3px solid"
-                              borderLeftColor="blue.400"
+                              bg="blue.100"
+                              borderLeft="2px solid"
+                              borderLeftColor="blue.500"
+                              cursor={isMobile ? "pointer" : "default"}
+                              onClick={() => isMobile ? toast({
+                                title: "Evento Google Calendar",
+                                description: evento.titulo,
+                                status: "info",
+                                duration: 3000,
+                                isClosable: true,
+                              }) : undefined}
+                              _hover={isMobile ? { 
+                                bg: "blue.200",
+                                transform: 'scale(1.02)'
+                              } : {}}
+                              transition="all 0.2s"
                             >
-                              <CardBody p={2}>
-                                <VStack spacing={1} align="flex-start">
-                                  <Text fontSize="xs" fontWeight="bold" noOfLines={1} color={textColor}>
-                                    {evento.titulo}
-                                  </Text>
-                                  <Text fontSize="xs" color={mutedTextColor} noOfLines={1}>
-                                    📅 Google Calendar
-                                  </Text>
-                                  <Badge size="xs" colorScheme="blue">
-                                    Evento Externo
-                                  </Badge>
-                                </VStack>
+                              <CardBody p={{ base: 1.5, md: 2 }}>
+                                {isMobile ? (
+                                  <VStack spacing={1} align="flex-start" w="full">
+                                    <Text fontSize="xs" fontWeight="bold" noOfLines={1} color={textColor} w="full">
+                                      {evento.titulo.length > 10 ? evento.titulo.substring(0, 10) + '...' : evento.titulo}
+                                    </Text>
+                                    <Badge size="xs" colorScheme="blue" variant="solid">
+                                      G
+                                    </Badge>
+                                  </VStack>
+                                ) : (
+                                  <VStack spacing={1} align="flex-start">
+                                    <Text fontSize="xs" fontWeight="bold" noOfLines={1} color={textColor}>
+                                      {evento.titulo}
+                                    </Text>
+                                    <Text fontSize="xs" color={mutedTextColor} noOfLines={1}>
+                                      📅 Google Calendar
+                                    </Text>
+                                    <Badge size="xs" colorScheme="blue">
+                                      Evento Externo
+                                    </Badge>
+                                  </VStack>
+                                )}
                               </CardBody>
                             </Card>
                           );
@@ -682,12 +877,12 @@ export const Agendamento: React.FC = () => {
         </Box>
 
         {/* Resumo da Semana */}
-        <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+        <SimpleGrid columns={{ base: 2, sm: 2, md: 4 }} spacing={{ base: 3, md: 4 }}>
           <Card bg="white" shadow="sm">
-            <CardBody>
-              <VStack>
+            <CardBody p={{ base: 4, md: 6 }}>
+              <VStack spacing={{ base: 2, md: 3 }}>
                 <CalendarIcon color="blue.500" />
-                <Text fontSize="2xl" fontWeight="bold" color="blue.500">
+                <Text fontSize={{ base: 'xl', md: '2xl' }} fontWeight="bold" color="blue.500">
                   {agendamentos.length}
                 </Text>
                 <Text fontSize="sm" color="gray.600">Total de Agendamentos</Text>
@@ -732,6 +927,113 @@ export const Agendamento: React.FC = () => {
           </Card>
         </SimpleGrid>
       </VStack>
+
+      {/* Modal de Ações do Agendamento (Mobile) */}
+      {agendamentoSelecionado && (
+        <Modal isOpen={isActionsOpen} onClose={onActionsClose} size="sm">
+          <ModalOverlay />
+          <ModalContent mx={4}>
+            <ModalHeader pb={2}>
+              <VStack align="start" spacing={1}>
+                <Text fontSize="lg" fontWeight="bold">
+                  {agendamentoSelecionado.cliente_nome}
+                </Text>
+                <HStack spacing={2}>
+                  <Badge colorScheme={getStatusColor(agendamentoSelecionado.status)}>
+                    {getStatusLabel(agendamentoSelecionado.status)}
+                  </Badge>
+                  <Text fontSize="sm" color="gray.500">
+                    {agendamentoSelecionado.horario.substring(0, 5)}
+                    {agendamentoSelecionado.horario_fim && ` - ${agendamentoSelecionado.horario_fim.substring(0, 5)}`}
+                  </Text>
+                </HStack>
+                {/* Mostrar serviço(s) */}
+                {agendamentoSelecionado.servicos && agendamentoSelecionado.servicos.length > 0 ? (
+                  <Text fontSize="sm" color="gray.600">
+                    {agendamentoSelecionado.servicos.map(s => s.servico?.nome).join(', ')}
+                  </Text>
+                ) : (
+                  <Text fontSize="sm" color="gray.600">
+                    {agendamentoSelecionado.servico?.nome || 'Serviço'}
+                  </Text>
+                )}
+              </VStack>
+            </ModalHeader>
+            <ModalCloseButton />
+            
+            <ModalBody pb={6}>
+              <VStack spacing={3} align="stretch">
+                <Text fontSize="sm" fontWeight="medium" color="gray.700">
+                  Alterar status:
+                </Text>
+                
+                <Button
+                  variant="outline"
+                  colorScheme="blue"
+                  onClick={() => {
+                    handleAlterarStatus(agendamentoSelecionado.id, 'AGENDADO');
+                    onActionsClose();
+                  }}
+                  isDisabled={agendamentoSelecionado.status === 'AGENDADO'}
+                >
+                  ✓ Marcar como Agendado
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  colorScheme="green"
+                  onClick={() => {
+                    handleAlterarStatus(agendamentoSelecionado.id, 'CONFIRMADO');
+                    onActionsClose();
+                  }}
+                  isDisabled={agendamentoSelecionado.status === 'CONFIRMADO'}
+                >
+                  ✓ Marcar como Confirmado
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  colorScheme="purple"
+                  onClick={() => {
+                    handleAlterarStatus(agendamentoSelecionado.id, 'REALIZADO');
+                    onActionsClose();
+                  }}
+                  isDisabled={agendamentoSelecionado.status === 'REALIZADO'}
+                >
+                  ✓ Marcar como Realizado
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  colorScheme="orange"
+                  onClick={() => {
+                    handleAlterarStatus(agendamentoSelecionado.id, 'CANCELADO');
+                    onActionsClose();
+                  }}
+                  isDisabled={agendamentoSelecionado.status === 'CANCELADO'}
+                >
+                  ✗ Cancelar Agendamento
+                </Button>
+                
+                <Divider />
+                
+                <Button
+                  variant="outline"
+                  colorScheme="red"
+                  onClick={() => {
+                    if (confirm('Tem certeza que deseja excluir este agendamento?')) {
+                      handleExcluirAgendamento(agendamentoSelecionado.id);
+                      onActionsClose();
+                    }
+                  }}
+                >
+                  🗑️ Excluir Agendamento
+                </Button>
+              </VStack>
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+      )}
 
       {/* Modal de Novo Agendamento */}
       <AgendamentoFormModal

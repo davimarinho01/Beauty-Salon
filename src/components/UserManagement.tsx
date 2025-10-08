@@ -34,10 +34,13 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
   useColorModeValue,
+  useBreakpointValue,
   Heading,
   Card,
   CardBody,
   Spinner,
+  TableContainer,
+  Divider,
 } from '@chakra-ui/react'
 import { Plus, Edit, Trash2 } from 'lucide-react'
 import { databaseAuthService } from '../services/databaseAuth'
@@ -84,6 +87,9 @@ export const UserManagement: React.FC = () => {
   const borderColor = useColorModeValue('gray.200', 'gray.600')
   const headingColor = useColorModeValue('gray.800', 'gray.100')
   const textColor = useColorModeValue('gray.600', 'gray.300')
+
+  // Detecção de mobile
+  const isMobile = useBreakpointValue({ base: true, md: false })
 
   // Carregar usuários
   const loadUsers = async () => {
@@ -318,134 +324,236 @@ export const UserManagement: React.FC = () => {
     <Box>
       <VStack align="stretch" spacing={6}>
         {/* Cabeçalho */}
-        <HStack justify="space-between" align="center">
-          <VStack align="start" spacing={1}>
-            <Heading size="lg" color={headingColor}>
-              Gerenciamento de Usuários
-            </Heading>
-            <Text color={textColor}>
-              Gerencie usuários do sistema ({users.length} total)
-            </Text>
-          </VStack>
-          <Button
-            leftIcon={<Plus size={16} />}
-            colorScheme="brand"
-            onClick={handleCreate}
-          >
-            Novo Usuário
-          </Button>
-        </HStack>
+        <VStack spacing={{ base: 4, md: 0 }} align="stretch">
+          <HStack justify="space-between" align={{ base: 'start', md: 'center' }} direction={{ base: 'column', md: 'row' }}>
+            <VStack align="start" spacing={1}>
+              <Heading size={{ base: 'md', md: 'lg' }} color={headingColor}>
+                Gerenciamento de Usuários
+              </Heading>
+              <Text color={textColor} fontSize={{ base: 'sm', md: 'md' }}>
+                Gerencie usuários do sistema ({users.length} total)
+              </Text>
+            </VStack>
+            <Button
+              leftIcon={<Plus size={16} />}
+              colorScheme="brand"
+              onClick={handleCreate}
+              size={{ base: 'sm', md: 'md' }}
+              w={{ base: 'full', md: 'auto' }}
+            >
+              Novo Usuário
+            </Button>
+          </HStack>
+        </VStack>
 
-        {/* Tabela de usuários */}
+        {/* Lista de usuários - Responsiva */}
         <Card bg={bgColor} borderColor={borderColor}>
-          <CardBody p={0}>
-            <Table variant="simple">
-              <Thead>
-                <Tr>
-                  <Th>Usuário</Th>
-                  <Th>E-mail</Th>
-                  <Th>Role</Th>
-                  <Th>Status</Th>
-                  <Th>Último Login</Th>
-                  <Th>Ações</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
+          <CardBody p={{ base: 4, md: 6 }}>
+            {isMobile ? (
+              // Layout Mobile - Cards
+              <VStack spacing={3} align="stretch">
                 {users.map((user) => (
-                  <Tr key={user.id}>
-                    <Td>
-                      <HStack spacing={3}>
-                        <Avatar 
-                          size="sm" 
-                          name={`${user.nome} ${user.sobrenome}`}
-                          src={user.avatar_url}
-                        />
-                        <VStack align="start" spacing={0}>
-                          <Text fontWeight="medium" fontSize="sm">
-                            {user.nome} {user.sobrenome}
-                          </Text>
-                          {user.telefone && (
-                            <Text fontSize="xs" color={textColor}>
-                              {user.telefone}
+                  <Card key={user.id} size="sm" variant="outline">
+                    <CardBody p={4}>
+                      <VStack align="stretch" spacing={3}>
+                        {/* Header do usuário */}
+                        <HStack justify="space-between" align="center">
+                          <HStack spacing={3}>
+                            <Avatar 
+                              size="md" 
+                              name={`${user.nome} ${user.sobrenome}`}
+                              src={user.avatar_url}
+                            />
+                            <VStack align="start" spacing={1}>
+                              <Text fontWeight="bold" fontSize="md">
+                                {user.nome} {user.sobrenome}
+                              </Text>
+                              <Badge 
+                                colorScheme={user.role === 'admin' ? 'purple' : 'blue'}
+                                variant="solid"
+                              >
+                                {user.role === 'admin' ? 'Administrador' : 'Recepção'}
+                              </Badge>
+                            </VStack>
+                          </HStack>
+                          <Badge 
+                            colorScheme={user.ativo ? 'green' : 'red'}
+                            variant="solid"
+                          >
+                            {user.ativo ? 'ATIVO' : 'INATIVO'}
+                          </Badge>
+                        </HStack>
+                        
+                        {/* Informações de contato */}
+                        <VStack align="stretch" spacing={2}>
+                          <HStack justify="space-between">
+                            <Text fontSize="sm" color="gray.600">Email:</Text>
+                            <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
+                              {user.email}
                             </Text>
+                          </HStack>
+                          
+                          {user.telefone && (
+                            <HStack justify="space-between">
+                              <Text fontSize="sm" color="gray.600">Telefone:</Text>
+                              <Text fontSize="sm" fontWeight="medium">
+                                {user.telefone}
+                              </Text>
+                            </HStack>
                           )}
+                          
+                          <HStack justify="space-between">
+                            <Text fontSize="sm" color="gray.600">Último login:</Text>
+                            <Text fontSize="sm" fontWeight="medium">
+                              {user.ultimo_login 
+                                ? formatDate(user.ultimo_login)
+                                : 'Nunca'
+                              }
+                            </Text>
+                          </HStack>
                         </VStack>
-                      </HStack>
-                    </Td>
-                    <Td>
-                      <Text fontSize="sm">{user.email}</Text>
-                    </Td>
-                    <Td>
-                      <Badge 
-                        colorScheme={user.role === 'admin' ? 'purple' : 'blue'}
-                        variant="subtle"
-                      >
-                        {user.role === 'admin' ? 'Administrador' : 'Recepção'}
-                      </Badge>
-                    </Td>
-                    <Td>
-                      <Badge 
-                        colorScheme={user.ativo ? 'green' : 'red'}
-                        variant="subtle"
-                      >
-                        {user.ativo ? 'Ativo' : 'Inativo'}
-                      </Badge>
-                    </Td>
-                    <Td>
-                      <Text fontSize="sm" color={textColor}>
-                        {user.ultimo_login 
-                          ? formatDate(user.ultimo_login)
-                          : 'Nunca'
-                        }
-                      </Text>
-                    </Td>
-                    <Td>
-                      <HStack spacing={1}>
-                        <IconButton
-                          aria-label="Editar usuário"
-                          icon={<Edit size={16} />}
-                          size="sm"
-                          variant="ghost"
-                          colorScheme="blue"
-                          onClick={() => handleEdit(user)}
-                        />
-                        {user.id !== currentUser?.id && (
+                        
+                        <Divider />
+                        
+                        {/* Ações */}
+                        <HStack justify="center" spacing={3}>
                           <IconButton
-                            aria-label="Desativar usuário"
-                            icon={<Trash2 size={16} />}
+                            aria-label="Editar usuário"
+                            icon={<Edit size={16} />}
                             size="sm"
                             variant="ghost"
-                            colorScheme="red"
-                            onClick={() => handleDeleteClick(user)}
+                            colorScheme="blue"
+                            onClick={() => handleEdit(user)}
                           />
-                        )}
-                      </HStack>
-                    </Td>
-                  </Tr>
+                          {user.id !== currentUser?.id && (
+                            <IconButton
+                              aria-label="Desativar usuário"
+                              icon={<Trash2 size={16} />}
+                              size="sm"
+                              variant="ghost"
+                              colorScheme="red"
+                              onClick={() => handleDeleteClick(user)}
+                            />
+                          )}
+                        </HStack>
+                      </VStack>
+                    </CardBody>
+                  </Card>
                 ))}
-              </Tbody>
-            </Table>
+              </VStack>
+            ) : (
+              // Layout Desktop - Tabela
+              <TableContainer>
+                <Table variant="simple">
+                  <Thead>
+                    <Tr>
+                      <Th>Usuário</Th>
+                      <Th>E-mail</Th>
+                      <Th>Role</Th>
+                      <Th>Status</Th>
+                      <Th>Último Login</Th>
+                      <Th>Ações</Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {users.map((user) => (
+                      <Tr key={user.id}>
+                        <Td>
+                          <HStack spacing={3}>
+                            <Avatar 
+                              size="sm" 
+                              name={`${user.nome} ${user.sobrenome}`}
+                              src={user.avatar_url}
+                            />
+                            <VStack align="start" spacing={0}>
+                              <Text fontWeight="medium" fontSize="sm">
+                                {user.nome} {user.sobrenome}
+                              </Text>
+                              {user.telefone && (
+                                <Text fontSize="xs" color={textColor}>
+                                  {user.telefone}
+                                </Text>
+                              )}
+                            </VStack>
+                          </HStack>
+                        </Td>
+                        <Td>
+                          <Text fontSize="sm">{user.email}</Text>
+                        </Td>
+                        <Td>
+                          <Badge 
+                            colorScheme={user.role === 'admin' ? 'purple' : 'blue'}
+                            variant="subtle"
+                          >
+                            {user.role === 'admin' ? 'Administrador' : 'Recepção'}
+                          </Badge>
+                        </Td>
+                        <Td>
+                          <Badge 
+                            colorScheme={user.ativo ? 'green' : 'red'}
+                            variant="subtle"
+                          >
+                            {user.ativo ? 'Ativo' : 'Inativo'}
+                          </Badge>
+                        </Td>
+                        <Td>
+                          <Text fontSize="sm" color={textColor}>
+                            {user.ultimo_login 
+                              ? formatDate(user.ultimo_login)
+                              : 'Nunca'
+                            }
+                          </Text>
+                        </Td>
+                        <Td>
+                          <HStack spacing={1}>
+                            <IconButton
+                              aria-label="Editar usuário"
+                              icon={<Edit size={16} />}
+                              size="sm"
+                              variant="ghost"
+                              colorScheme="blue"
+                              onClick={() => handleEdit(user)}
+                            />
+                            {user.id !== currentUser?.id && (
+                              <IconButton
+                                aria-label="Desativar usuário"
+                                icon={<Trash2 size={16} />}
+                                size="sm"
+                                variant="ghost"
+                                colorScheme="red"
+                                onClick={() => handleDeleteClick(user)}
+                              />
+                            )}
+                          </HStack>
+                        </Td>
+                      </Tr>
+                    ))}
+                  </Tbody>
+                </Table>
+              </TableContainer>
+            )}
           </CardBody>
         </Card>
       </VStack>
 
       {/* Modal de criação/edição */}
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <Modal isOpen={isOpen} onClose={onClose} size={{ base: 'full', md: 'lg' }}>
         <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
+        <ModalContent mx={{ base: 0, md: 4 }} my={{ base: 0, md: 'auto' }}>
+          <ModalHeader pb={{ base: 4, md: 6 }}>
             {selectedUser ? 'Editar Usuário' : 'Novo Usuário'}
           </ModalHeader>
           <ModalCloseButton />
-          <ModalBody>
+          <ModalBody pb={{ base: 4, md: 6 }}>
             <VStack spacing={4}>
-              <HStack spacing={4} w="full">
+              <VStack spacing={4} w="full" direction={{ base: 'column', md: 'row' }}>
                 <FormControl isRequired>
                   <FormLabel>Nome</FormLabel>
                   <Input
                     value={formData.nome}
                     onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                     placeholder="Nome"
+                    size={{ base: 'md', md: 'md' }}
                   />
                 </FormControl>
                 <FormControl isRequired>
@@ -454,9 +562,10 @@ export const UserManagement: React.FC = () => {
                     value={formData.sobrenome}
                     onChange={(e) => setFormData({ ...formData, sobrenome: e.target.value })}
                     placeholder="Sobrenome"
+                    size={{ base: 'md', md: 'md' }}
                   />
                 </FormControl>
-              </HStack>
+              </VStack>
 
               <FormControl isRequired>
                 <FormLabel>E-mail</FormLabel>
@@ -465,16 +574,18 @@ export const UserManagement: React.FC = () => {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="email@exemplo.com"
+                  size={{ base: 'md', md: 'md' }}
                 />
               </FormControl>
 
-              <HStack spacing={4} w="full">
+              <VStack spacing={4} w="full" direction={{ base: 'column', md: 'row' }}>
                 <FormControl>
                   <FormLabel>Telefone</FormLabel>
                   <Input
                     value={formData.telefone}
                     onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
                     placeholder="(11) 99999-9999"
+                    size={{ base: 'md', md: 'md' }}
                   />
                 </FormControl>
                 <FormControl isRequired>
@@ -482,14 +593,15 @@ export const UserManagement: React.FC = () => {
                   <Select
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+                    size={{ base: 'md', md: 'md' }}
                   >
                     <option value="recepcao">Recepção</option>
                     <option value="admin">Administrador</option>
                   </Select>
                 </FormControl>
-              </HStack>
+              </VStack>
 
-              <HStack spacing={4} w="full">
+              <VStack spacing={4} w="full" direction={{ base: 'column', md: 'row' }}>
                 <FormControl isRequired={!selectedUser}>
                   <FormLabel>
                     {selectedUser ? 'Nova Senha (deixe vazio para não alterar)' : 'Senha'}
@@ -499,6 +611,7 @@ export const UserManagement: React.FC = () => {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder="Mínimo 6 caracteres"
+                    size={{ base: 'md', md: 'md' }}
                   />
                 </FormControl>
                 <FormControl isRequired={!!formData.password}>
@@ -508,14 +621,21 @@ export const UserManagement: React.FC = () => {
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     placeholder="Confirme a senha"
+                    size={{ base: 'md', md: 'md' }}
                   />
                 </FormControl>
-              </HStack>
+              </VStack>
             </VStack>
           </ModalBody>
 
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
+          <ModalFooter flexDirection={{ base: 'column', md: 'row' }} gap={{ base: 3, md: 0 }}>
+            <Button 
+              variant="ghost" 
+              mr={{ base: 0, md: 3 }} 
+              onClick={onClose}
+              w={{ base: 'full', md: 'auto' }}
+              order={{ base: 2, md: 1 }}
+            >
               Cancelar
             </Button>
             <Button 
@@ -523,6 +643,8 @@ export const UserManagement: React.FC = () => {
               onClick={handleSave}
               isLoading={submitting}
               loadingText={selectedUser ? 'Atualizando...' : 'Criando...'}
+              w={{ base: 'full', md: 'auto' }}
+              order={{ base: 1, md: 2 }}
             >
               {selectedUser ? 'Atualizar' : 'Criar'}
             </Button>

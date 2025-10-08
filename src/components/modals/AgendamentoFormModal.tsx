@@ -64,13 +64,6 @@ export const AgendamentoFormModal: React.FC<AgendamentoFormModalProps> = ({
   servicos,
   onSave
 }) => {
-  // Debug: verificar se os dados estão sendo recebidos
-  console.log('📊 Debug AgendamentoFormModal:', {
-    isOpen,
-    funcionarios: funcionarios?.length || 0,
-    servicos: servicos?.length || 0
-  });
-
   // Cores do dark mode
   const resumoBg = useColorModeValue('gray.50', 'gray.700');
   const resumoTextColor = useColorModeValue('gray.700', 'gray.100');
@@ -209,8 +202,6 @@ export const AgendamentoFormModal: React.FC<AgendamentoFormModalProps> = ({
           novoFormData.funcionario_id = funcionariosAtualizados[0];
         }
         
-        console.log(`🗑️ Serviço removido: ${servicoRemovido?.nome}`);
-        
         return novoFormData;
       });
     }
@@ -253,8 +244,6 @@ export const AgendamentoFormModal: React.FC<AgendamentoFormModalProps> = ({
 
       return novoFormData;
     });
-
-    console.log(`🎯 Serviço selecionado: ${servicoSelecionado?.nome}, Funcionário responsável: ${servicoSelecionado?.funcionario?.nome || 'Não definido'}`);
   };
 
   // Funções para gerenciar múltiplos funcionários
@@ -353,7 +342,7 @@ export const AgendamentoFormModal: React.FC<AgendamentoFormModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} size={{ base: 'full', md: 'lg' }}>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader color="rosa.600">
@@ -369,7 +358,7 @@ export const AgendamentoFormModal: React.FC<AgendamentoFormModalProps> = ({
                 <Text fontWeight="bold" mb={3} color={tituloColor}>
                   Informações do Cliente
                 </Text>
-                <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={4}>
                   <GridItem>
                     <FormControl isRequired>
                       <FormLabel>Nome do Cliente</FormLabel>
@@ -554,7 +543,7 @@ export const AgendamentoFormModal: React.FC<AgendamentoFormModalProps> = ({
                 <Text fontWeight="bold" mb={3} color={tituloColor}>
                   Data e Horário
                 </Text>
-                <Grid templateColumns="repeat(3, 1fr)" gap={4}>
+                <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={4}>
                   <GridItem>
                     <FormControl isRequired>
                       <FormLabel>Data do Agendamento</FormLabel>

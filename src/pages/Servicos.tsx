@@ -26,7 +26,9 @@ import {
   Td,
   TableContainer,
   Progress,
-  useColorModeValue
+  useColorModeValue,
+  useBreakpointValue,
+  Divider
 } from '@chakra-ui/react';
 import { AddIcon, EditIcon, ViewIcon, DeleteIcon, RepeatIcon } from '@chakra-ui/icons';
 import { servicoService, funcionarioService, financeiroService } from '../services/api';
@@ -62,6 +64,9 @@ export const Servicos: React.FC = () => {
   const [servicoSelecionado, setServicoSelecionado] = useState<Servico | null>(null);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
+
+  // Responsividade
+  const isMobile = useBreakpointValue({ base: true, md: false });
 
   // Cores do modo escuro/claro
   const cardBg = useColorModeValue('white', 'gray.800');
@@ -262,11 +267,11 @@ export const Servicos: React.FC = () => {
     <Box p={6}>
       <VStack spacing={4} align="stretch">
         {/* Cabeçalho */}
-        <HStack justify="space-between" align="center">
-          <Heading size="lg" color={headingColor}>
+        <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
+          <Heading size={{ base: 'md', md: 'lg' }} color={headingColor}>
             Gestão de Serviços
           </Heading>
-          <HStack spacing={3}>
+          <HStack spacing={{ base: 2, md: 3 }} flexWrap="wrap">
             <Button
               leftIcon={<RepeatIcon />}
               variant="outline"
@@ -274,21 +279,24 @@ export const Servicos: React.FC = () => {
               onClick={recarregarDados}
               isLoading={loading}
               loadingText="Atualizando..."
+              size={{ base: 'sm', md: 'md' }}
             >
-              Atualizar
+              <Text display={{ base: 'none', md: 'block' }}>Atualizar</Text>
             </Button>
             <Button
               leftIcon={<AddIcon />}
               colorScheme="rosa"
               onClick={handleNovoServico}
+              size={{ base: 'sm', md: 'md' }}
             >
-              Novo Serviço
+              <Text display={{ base: 'none', md: 'block' }}>Novo Serviço</Text>
+              <Text display={{ base: 'block', md: 'none' }}>Novo</Text>
             </Button>
           </HStack>
         </HStack>
 
         {/* Cards Estatísticos - Movidos para o topo */}
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={{ base: 3, md: 4 }}>
           <Card bg={cardBg} shadow="sm" borderColor={borderColor} size="sm">
             <CardBody py={3}>
               <Stat>
@@ -341,17 +349,17 @@ export const Servicos: React.FC = () => {
         </SimpleGrid>
 
         {/* Cards de Serviços - Compactos */}
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={3}>
+        <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: 3, md: 4 }}>
           {servicos.filter(s => s.ativo).map((servico) => (
             <Card key={servico.id} bg={cardBg} shadow="sm" borderWidth="1px" borderColor={borderColor} size="sm">
-              <CardBody py={3} px={4}>
-                <VStack spacing={2} align="stretch">
+              <CardBody py={{ base: 3, md: 4 }} px={{ base: 3, md: 4 }}>
+                <VStack spacing={{ base: 2, md: 3 }} align="stretch">
                   {/* Header do Card - Compacto */}
                   <Box>
-                    <Text fontWeight="bold" fontSize="md" color={textColor} noOfLines={1} mb={1}>
+                    <Text fontWeight="bold" fontSize={{ base: 'sm', md: 'md' }} color={textColor} noOfLines={1} mb={1}>
                       {servico.nome}
                     </Text>
-                    <Text fontSize="lg" fontWeight="bold" color="green.500">
+                    <Text fontSize={{ base: 'md', md: 'lg' }} fontWeight="bold" color="green.500">
                       R$ {servico.valor_base.toLocaleString()}
                     </Text>
                   </Box>
@@ -441,75 +449,97 @@ export const Servicos: React.FC = () => {
           ))}
         </SimpleGrid>
 
-        {/* Tabela Detalhada */}
-        <Box bg={tableBg} p={4} borderRadius="lg" shadow="sm" borderColor={borderColor}>
-          <Heading size="md" mb={3} color={tableHeaderColor}>
+        {/* Lista de Serviços - Responsiva */}
+        <Box bg={tableBg} p={{ base: 3, md: 4 }} borderRadius="lg" shadow="sm" borderColor={borderColor}>
+          <Heading size={{ base: 'sm', md: 'md' }} mb={3} color={tableHeaderColor}>
             Lista Completa de Serviços
           </Heading>
           
-          <TableContainer>
-            <Table variant="simple" size="sm">
-              <Thead>
-                <Tr>
-                  <Th color={mutedTextColor} fontSize="xs">Serviço</Th>
-                  <Th color={mutedTextColor} fontSize="xs">Preço Base</Th>
-                  <Th color={mutedTextColor} fontSize="xs">Responsável</Th>
-                  <Th color={mutedTextColor} fontSize="xs">Vendas (Mês)</Th>
-                  <Th color={mutedTextColor} fontSize="xs">Faturamento (Mês)</Th>
-                  <Th color={mutedTextColor} fontSize="xs">Status</Th>
-                  <Th color={mutedTextColor} fontSize="xs">Ações</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {servicos.map((servico) => (
-                  <Tr key={servico.id}>
-                    <Td py={2}>
-                      <Box>
-                        <Text fontWeight="medium" color={textColor} fontSize="sm">{servico.nome}</Text>
-                        <Text fontSize="xs" color={mutedTextColor} noOfLines={1}>
-                          {servico.descricao || 'Sem descrição'}
-                        </Text>
-                      </Box>
-                    </Td>
-                    <Td py={2}>
-                      <Text fontWeight="bold" color="green.600" fontSize="sm">
-                        R$ {servico.valor_base.toLocaleString()}
-                      </Text>
-                    </Td>
-                    <Td py={2}>
-                      <HStack spacing={1}>
-                        <Avatar 
-                          size="xs" 
-                          name={getNomeFuncionario(servico.funcionario_responsavel_id)}
-                          bg="rosa.400"
-                          color="white"
-                        />
-                        <Text fontSize="xs" color={textColor} noOfLines={1}>
-                          {getNomeFuncionario(servico.funcionario_responsavel_id)}
+          {isMobile ? (
+            // Layout Mobile - Cards
+            <VStack spacing={3} align="stretch">
+              {servicos.map((servico) => (
+                <Card key={servico.id} size="sm" variant="outline">
+                  <CardBody p={4}>
+                    <VStack align="stretch" spacing={3}>
+                      {/* Header do card */}
+                      <HStack justify="space-between" align="center">
+                        <Badge
+                          colorScheme={servico.ativo ? 'green' : 'red'}
+                          variant="solid"
+                          fontSize="xs"
+                        >
+                          {servico.ativo ? 'ATIVO' : 'INATIVO'}
+                        </Badge>
+                        <Text fontSize="lg" fontWeight="bold" color="green.600">
+                          R$ {servico.valor_base.toLocaleString()}
                         </Text>
                       </HStack>
-                    </Td>
-                    <Td py={2}>
-                      <Text fontWeight="medium" color="blue.600" fontSize="sm">
-                        {servico.vendas_mes || 0}
-                      </Text>
-                    </Td>
-                    <Td py={2}>
-                      <Text fontWeight="medium" color="green.600" fontSize="sm">
-                        R$ {servico.faturamento_mes?.toLocaleString() || '0'}
-                      </Text>
-                    </Td>
-                    <Td py={2}>
-                      <Badge colorScheme={servico.ativo ? 'green' : 'red'} fontSize="xs">
-                        {servico.ativo ? 'Ativo' : 'Inativo'}
-                      </Badge>
-                    </Td>
-                    <Td py={2}>
-                      <HStack spacing={1}>
+                      
+                      {/* Nome e descrição */}
+                      <VStack align="stretch" spacing={1}>
+                        <Text fontSize="md" fontWeight="bold" color={textColor}>
+                          {servico.nome}
+                        </Text>
+                        <Text fontSize="sm" color={mutedTextColor}>
+                          {servico.descricao || 'Sem descrição'}
+                        </Text>
+                      </VStack>
+                      
+                      {/* Informações principais */}
+                      <VStack align="stretch" spacing={2}>
+                        <HStack justify="space-between">
+                          <Text fontSize="xs" color={mutedTextColor}>Responsável:</Text>
+                          <HStack spacing={1}>
+                            <Avatar 
+                              size="2xs" 
+                              name={getNomeFuncionario(servico.funcionario_responsavel_id)}
+                              bg="rosa.400"
+                            />
+                            <Text fontSize="xs" fontWeight="medium">
+                              {getNomeFuncionario(servico.funcionario_responsavel_id)}
+                            </Text>
+                          </HStack>
+                        </HStack>
+                        
+                        <HStack justify="space-between">
+                          <Text fontSize="xs" color={mutedTextColor}>Vendas (mês):</Text>
+                          <Text fontSize="xs" fontWeight="bold" color="blue.600">
+                            {servico.vendas_mes || 0}
+                          </Text>
+                        </HStack>
+                        
+                        <HStack justify="space-between">
+                          <Text fontSize="xs" color={mutedTextColor}>Faturamento (mês):</Text>
+                          <Text fontSize="xs" fontWeight="bold" color="green.600">
+                            R$ {servico.faturamento_mes?.toLocaleString() || '0'}
+                          </Text>
+                        </HStack>
+                        
+                        <VStack align="stretch" spacing={1}>
+                          <HStack justify="space-between">
+                            <Text fontSize="xs" color={mutedTextColor}>Popularidade:</Text>
+                            <Text fontSize="xs" fontWeight="bold">
+                              {servico.popularidade?.toFixed(0) || 0}%
+                            </Text>
+                          </HStack>
+                          <Progress 
+                            value={servico.popularidade || 0} 
+                            size="sm" 
+                            colorScheme={getPopularidadeColor(servico.popularidade || 0)}
+                            bg={progressBg}
+                          />
+                        </VStack>
+                      </VStack>
+                      
+                      <Divider />
+                      
+                      {/* Ações */}
+                      <HStack justify="center" spacing={3}>
                         <IconButton
                           aria-label="Ver detalhes"
                           icon={<ViewIcon />}
-                          size="xs"
+                          size="sm"
                           variant="ghost"
                           colorScheme="blue"
                           onClick={() => handleVerDetalhes(servico)}
@@ -517,7 +547,7 @@ export const Servicos: React.FC = () => {
                         <IconButton
                           aria-label="Editar serviço"
                           icon={<EditIcon />}
-                          size="xs"
+                          size="sm"
                           variant="ghost"
                           colorScheme="rosa"
                           onClick={() => handleEditarServico(servico)}
@@ -526,19 +556,129 @@ export const Servicos: React.FC = () => {
                           <IconButton
                             aria-label="Desativar serviço"
                             icon={<DeleteIcon />}
-                            size="xs"
+                            size="sm"
                             variant="ghost"
                             colorScheme="red"
                             onClick={() => handleExcluirServico(servico)}
                           />
                         )}
                       </HStack>
-                    </Td>
+                    </VStack>
+                  </CardBody>
+                </Card>
+              ))}
+            </VStack>
+          ) : (
+            // Layout Desktop - Tabela
+            <TableContainer>
+              <Table variant="simple" size="md">
+                <Thead>
+                  <Tr>
+                    <Th color={mutedTextColor} fontSize="xs">Serviço</Th>
+                    <Th color={mutedTextColor} fontSize="xs">Preço Base</Th>
+                    <Th color={mutedTextColor} fontSize="xs">Responsável</Th>
+                    <Th color={mutedTextColor} fontSize="xs">Vendas (Mês)</Th>
+                    <Th color={mutedTextColor} fontSize="xs">Faturamento (Mês)</Th>
+                    <Th color={mutedTextColor} fontSize="xs">Popularidade</Th>
+                    <Th color={mutedTextColor} fontSize="xs">Status</Th>
+                    <Th color={mutedTextColor} fontSize="xs">Ações</Th>
                   </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          </TableContainer>
+                </Thead>
+                <Tbody>
+                  {servicos.map((servico) => (
+                    <Tr key={servico.id}>
+                      <Td py={3}>
+                        <Box>
+                          <Text fontWeight="medium" color={textColor} fontSize="sm" noOfLines={1}>
+                            {servico.nome}
+                          </Text>
+                          <Text fontSize="xs" color={mutedTextColor} noOfLines={1}>
+                            {servico.descricao || 'Sem descrição'}
+                          </Text>
+                        </Box>
+                      </Td>
+                      <Td py={3}>
+                        <Text fontWeight="bold" color="green.600" fontSize="sm">
+                          R$ {servico.valor_base.toLocaleString()}
+                        </Text>
+                      </Td>
+                      <Td py={3}>
+                        <HStack spacing={1}>
+                          <Avatar 
+                            size="xs" 
+                            name={getNomeFuncionario(servico.funcionario_responsavel_id)}
+                            bg="rosa.400"
+                            color="white"
+                          />
+                          <Text fontSize="xs" color={textColor} noOfLines={1}>
+                            {getNomeFuncionario(servico.funcionario_responsavel_id)}
+                          </Text>
+                        </HStack>
+                      </Td>
+                      <Td py={3}>
+                        <Text fontWeight="medium" color="blue.600" fontSize="sm">
+                          {servico.vendas_mes || 0}
+                        </Text>
+                      </Td>
+                      <Td py={3}>
+                        <Text fontWeight="medium" color="green.600" fontSize="sm">
+                          R$ {servico.faturamento_mes?.toLocaleString() || '0'}
+                        </Text>
+                      </Td>
+                      <Td py={3}>
+                        <VStack align="stretch" spacing={1}>
+                          <Text fontSize="xs" fontWeight="bold" textAlign="center">
+                            {servico.popularidade?.toFixed(0) || 0}%
+                          </Text>
+                          <Progress 
+                            value={servico.popularidade || 0} 
+                            size="xs" 
+                            colorScheme={getPopularidadeColor(servico.popularidade || 0)}
+                            bg={progressBg}
+                          />
+                        </VStack>
+                      </Td>
+                      <Td py={3}>
+                        <Badge colorScheme={servico.ativo ? 'green' : 'red'} fontSize="xs">
+                          {servico.ativo ? 'Ativo' : 'Inativo'}
+                        </Badge>
+                      </Td>
+                      <Td py={3}>
+                        <HStack spacing={2}>
+                          <IconButton
+                            aria-label="Ver detalhes"
+                            icon={<ViewIcon />}
+                            size="sm"
+                            variant="ghost"
+                            colorScheme="blue"
+                            onClick={() => handleVerDetalhes(servico)}
+                          />
+                          <IconButton
+                            aria-label="Editar serviço"
+                            icon={<EditIcon />}
+                            size="sm"
+                            variant="ghost"
+                            colorScheme="rosa"
+                            onClick={() => handleEditarServico(servico)}
+                          />
+                          {servico.ativo && (
+                            <IconButton
+                              aria-label="Desativar serviço"
+                              icon={<DeleteIcon />}
+                              size="sm"
+                              variant="ghost"
+                              colorScheme="red"
+                              onClick={() => handleExcluirServico(servico)}
+                            />
+                          )}
+                        </HStack>
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </TableContainer>
+          )}
         </Box>
       </VStack>
 

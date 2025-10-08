@@ -27,6 +27,9 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
+  useBreakpointValue,
+  SimpleGrid,
+  Divider,
 } from '@chakra-ui/react'
 import {
   Plus,
@@ -50,6 +53,7 @@ export const Financeiro = () => {
   const [movimentacaoSelecionada, setMovimentacaoSelecionada] = useState<MovimentacaoFinanceira | null>(null)
   
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure()
+  const isMobile = useBreakpointValue({ base: true, md: false })
 
   // Carregar movimentações
   const carregarMovimentacoes = async () => {
@@ -152,12 +156,12 @@ export const Financeiro = () => {
     <Box>
       <VStack align="stretch" spacing={6}>
         {/* Header */}
-        <HStack justify="space-between" align="center">
+        <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
           <VStack align="start" spacing={1}>
-            <Heading size="lg" color="neutral.800">
+            <Heading size={{ base: 'md', md: 'lg' }} color="neutral.800">
               Controle Financeiro
             </Heading>
-            <Text color="neutral.600">
+            <Text color="neutral.600" fontSize={{ base: 'sm', md: 'md' }}>
               Gerencie entradas, saídas e movimentações
             </Text>
           </VStack>
@@ -167,16 +171,17 @@ export const Financeiro = () => {
               leftIcon={<Icon as={Filter} />}
               variant="outline"
               colorScheme="brand"
+              size={{ base: 'sm', md: 'md' }}
             >
-              Filtros
+              <Text display={{ base: 'none', md: 'block' }}>Filtros</Text>
             </Button>
           </HStack>
         </HStack>
 
         {/* Tabs principais */}
-        <Tabs colorScheme="brand" variant="enclosed">
-          <TabList>
-            <Tab>
+        <Tabs colorScheme="brand" variant="enclosed" size={{ base: 'sm', md: 'md' }}>
+          <TabList flexWrap="wrap">
+            <Tab fontSize={{ base: 'sm', md: 'md' }}>
               <HStack spacing={2}>
                 <Icon as={TrendingUp} w={4} h={4} />
                 <Text>Entradas</Text>
@@ -229,7 +234,100 @@ export const Financeiro = () => {
                 <Text color="neutral.500" textAlign="center" py={8}>
                   Nenhuma movimentação encontrada.
                 </Text>
+              ) : isMobile ? (
+                // Layout Mobile - Cards
+                <VStack spacing={3} align="stretch">
+                  {movimentacoes.map((movimentacao) => (
+                    <Card key={movimentacao.id} size="sm" variant="outline">
+                      <CardBody p={4}>
+                        <VStack align="stretch" spacing={3}>
+                          {/* Header do card */}
+                          <HStack justify="space-between" align="center">
+                            <Badge
+                              colorScheme={movimentacao.tipo === 'ENTRADA' ? 'green' : 'red'}
+                              variant="solid"
+                              fontSize="xs"
+                            >
+                              {movimentacao.tipo}
+                            </Badge>
+                            <Text fontSize="xs" color="gray.500">
+                              {formatarData(movimentacao.data_movimentacao)}
+                            </Text>
+                          </HStack>
+                          
+                          {/* Descrição principal */}
+                          <Text fontSize="sm" fontWeight="medium" color="gray.800">
+                            {movimentacao.descricao}
+                          </Text>
+                          
+                          {/* Informações secundárias */}
+                          <VStack align="stretch" spacing={2}>
+                            {movimentacao.funcionario && (
+                              <HStack justify="space-between">
+                                <Text fontSize="xs" color="gray.500">Funcionário:</Text>
+                                <Text fontSize="xs" fontWeight="medium">
+                                  {`${movimentacao.funcionario.nome} ${movimentacao.funcionario.sobrenome}`}
+                                </Text>
+                              </HStack>
+                            )}
+                            
+                            {movimentacao.cliente_nome && (
+                              <HStack justify="space-between">
+                                <Text fontSize="xs" color="gray.500">Cliente:</Text>
+                                <Text fontSize="xs" fontWeight="medium">
+                                  {movimentacao.cliente_nome}
+                                </Text>
+                              </HStack>
+                            )}
+                            
+                            {movimentacao.metodo_pagamento && (
+                              <HStack justify="space-between">
+                                <Text fontSize="xs" color="gray.500">Pagamento:</Text>
+                                <Badge variant="outline" fontSize="xs">
+                                  {movimentacao.metodo_pagamento}
+                                </Badge>
+                              </HStack>
+                            )}
+                          </VStack>
+                          
+                          <Divider />
+                          
+                          {/* Footer com valor e ações */}
+                          <HStack justify="space-between" align="center">
+                            <Text 
+                              fontSize="lg" 
+                              fontWeight="bold"
+                              color={movimentacao.tipo === 'ENTRADA' ? 'green.600' : 'red.600'}
+                            >
+                              {movimentacao.tipo === 'ENTRADA' ? '+' : '-'} {formatarValor(movimentacao.valor)}
+                            </Text>
+                            
+                            <HStack spacing={1}>
+                              <IconButton
+                                aria-label="Editar"
+                                icon={<Icon as={Edit3} />}
+                                size="sm"
+                                variant="ghost"
+                                colorScheme="blue"
+                                onClick={() => handleEditarMovimentacao(movimentacao)}
+                              />
+                              <IconButton
+                                aria-label="Excluir"
+                                icon={<Icon as={Trash2} />}
+                                size="sm"
+                                variant="ghost"
+                                colorScheme="red"
+                                onClick={() => handleExcluirMovimentacao(movimentacao.id)}
+                              />
+                            </HStack>
+                          </HStack>
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  ))}
+                </VStack>
               ) : (
+                // Layout Desktop - Tabela
                 <Box overflowX="auto">
                   <Table variant="simple">
                     <Thead>

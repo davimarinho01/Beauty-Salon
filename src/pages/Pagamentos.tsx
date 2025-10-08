@@ -27,7 +27,9 @@ import {
   Spinner,
   Alert,
   AlertIcon,
-  Progress
+  Progress,
+  useBreakpointValue,
+  Divider
 } from '@chakra-ui/react';
 import {
   BarChart,
@@ -73,6 +75,9 @@ export const Pagamentos = () => {
   const [periodo, setPeriodo] = useState('mes'); // hoje, semana, mes, trimestre, ano
   const [metodosAnalise, setMetodosAnalise] = useState<MetodoAnalise[]>([]);
   const [dadosGraficoLinhas, setDadosGraficoLinhas] = useState<DadosGrafico[]>([]);
+
+  // Responsividade
+  const isMobile = useBreakpointValue({ base: true, md: false });
 
   // Cores do tema
   const cardBg = useColorModeValue('white', 'gray.800');
@@ -309,15 +314,16 @@ export const Pagamentos = () => {
     <Box p={6}>
       <VStack spacing={6} align="stretch">
         {/* Cabeçalho */}
-        <HStack justify="space-between" align="center">
-          <Heading size="lg" color="pink.500">
+        <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
+          <Heading size={{ base: 'md', md: 'lg' }} color="pink.500">
             <Icon as={FaChartBar} mr={3} />
             Análise de Métodos de Pagamento
           </Heading>
           <Select 
             value={periodo} 
             onChange={(e) => setPeriodo(e.target.value)}
-            w="200px"
+            w={{ base: '150px', md: '200px' }}
+            size={{ base: 'sm', md: 'md' }}
           >
             <option value="hoje">Hoje</option>
             <option value="semana">Última Semana</option>
@@ -328,7 +334,7 @@ export const Pagamentos = () => {
         </HStack>
 
         {/* Estatísticas Gerais */}
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={{ base: 3, md: 4 }}>
           <Card bg={cardBg} borderColor={borderColor} borderWidth="1px">
             <CardBody>
               <Stat>
@@ -384,13 +390,13 @@ export const Pagamentos = () => {
 
         {/* Gráfico de Barras - Valores por Método */}
         <Card bg={cardBg} borderColor={borderColor} borderWidth="1px">
-          <CardBody>
-            <Heading size="md" mb={4} color={textColor}>
+          <CardBody p={{ base: 4, md: 6 }}>
+            <Heading size={{ base: 'sm', md: 'md' }} mb={4} color={textColor}>
               <Icon as={FaChartBar} mr={2} />
               Comparação de Valores por Método
             </Heading>
-            <Box h="400px">
-              <ResponsiveContainer width="100%" height="100%">
+            <Box h={{ base: "300px", md: "400px" }} overflowX="auto">
+              <ResponsiveContainer width="100%" height="100%" minWidth={300}>
                 <BarChart data={metodosAnalise}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
@@ -399,8 +405,12 @@ export const Pagamentos = () => {
                     angle={-45}
                     textAnchor="end"
                     height={100}
+                    fontSize={12}
                   />
-                  <YAxis tickFormatter={(value) => formatCurrency(value).replace('R$', 'R$')} />
+                  <YAxis 
+                    tickFormatter={(value) => formatCurrency(value).replace('R$', 'R$')} 
+                    fontSize={12}
+                  />
                   <Tooltip 
                     formatter={(value: number) => [formatCurrency(value), 'Valor']}
                     labelFormatter={(label) => formatMetodo(label)}
@@ -468,7 +478,75 @@ export const Pagamentos = () => {
                 <AlertIcon />
                 <Text>Dados carregados mas nenhum método de pagamento encontrado.</Text>
               </Alert>
+            ) : isMobile ? (
+              // Layout Mobile - Cards
+              <VStack spacing={3} align="stretch">
+                {metodosAnalise.map((metodo, index) => (
+                  <Card key={metodo.metodo} size="sm" variant="outline">
+                    <CardBody p={4}>
+                      <VStack align="stretch" spacing={3}>
+                        {/* Header com posição e método */}
+                        <HStack justify="space-between" align="center">
+                          <HStack spacing={3}>
+                            <Badge 
+                              colorScheme={index === 0 ? 'yellow' : index === 1 ? 'gray' : 'orange'}
+                              fontSize="md"
+                              px={3}
+                              py={1}
+                              borderRadius="full"
+                            >
+                              #{index + 1}
+                            </Badge>
+                            <VStack align="start" spacing={0}>
+                              <HStack>
+                                <Icon as={getMetodoIcon(metodo.metodo)} color={metodo.cor} boxSize={5} />
+                                <Text fontWeight="bold" fontSize="md">
+                                  {formatMetodo(metodo.metodo)}
+                                </Text>
+                              </HStack>
+                            </VStack>
+                          </HStack>
+                          <Text fontSize="lg" fontWeight="bold" color="green.500">
+                            {formatCurrency(metodo.total)}
+                          </Text>
+                        </HStack>
+                        
+                        {/* Métricas */}
+                        <VStack align="stretch" spacing={2}>
+                          <HStack justify="space-between">
+                            <Text fontSize="sm" color="gray.600">Transações:</Text>
+                            <Text fontSize="sm" fontWeight="bold">
+                              {metodo.quantidade}
+                            </Text>
+                          </HStack>
+                          
+                          <HStack justify="space-between">
+                            <Text fontSize="sm" color="gray.600">Participação:</Text>
+                            <Text fontSize="sm" fontWeight="bold">
+                              {metodo.percentual.toFixed(1)}%
+                            </Text>
+                          </HStack>
+                          
+                          <VStack align="stretch" spacing={1}>
+                            <Text fontSize="xs" color="gray.500">Representatividade:</Text>
+                            <Progress 
+                              value={metodo.percentual} 
+                              colorScheme="pink" 
+                              size="md"
+                              bg="gray.200"
+                              borderRadius="full"
+                            />
+                          </VStack>
+                        </VStack>
+                        
+                        {index < metodosAnalise.length - 1 && <Divider />}
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                ))}
+              </VStack>
             ) : (
+              // Layout Desktop - Tabela
               <TableContainer>
                 <Table variant="simple">
                   <Thead>

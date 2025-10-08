@@ -214,7 +214,7 @@ export const Configuracoes = () => {
                 <Stat>
                   <StatLabel fontSize="sm" color={mutedTextColor}>
                     <HStack>
-                      <Icon as={Users} size={16} />
+                      <Icon as={Users} boxSize={4} />
                       <Text>Funcionários</Text>
                     </HStack>
                   </StatLabel>
@@ -224,7 +224,7 @@ export const Configuracoes = () => {
                 <Stat>
                   <StatLabel fontSize="sm" color={mutedTextColor}>
                     <HStack>
-                      <Icon as={Scissors} size={16} />
+                      <Icon as={Scissors} boxSize={4} />
                       <Text>Serviços</Text>
                     </HStack>
                   </StatLabel>
@@ -234,7 +234,7 @@ export const Configuracoes = () => {
                 <Stat>
                   <StatLabel fontSize="sm" color={mutedTextColor}>
                     <HStack>
-                      <Icon as={DollarSign} size={16} />
+                      <Icon as={DollarSign} boxSize={4} />
                       <Text>Movimentações</Text>
                     </HStack>
                   </StatLabel>
@@ -244,7 +244,7 @@ export const Configuracoes = () => {
                 <Stat>
                   <StatLabel fontSize="sm" color={mutedTextColor}>
                     <HStack>
-                      <Icon as={Calendar} size={16} />
+                      <Icon as={Calendar} boxSize={4} />
                       <Text>Agendamentos</Text>
                     </HStack>
                   </StatLabel>
@@ -254,7 +254,7 @@ export const Configuracoes = () => {
                 <Stat>
                   <StatLabel fontSize="sm" color={mutedTextColor}>
                     <HStack>
-                      <Icon as={Database} size={16} />
+                      <Icon as={Database} boxSize={4} />
                       <Text>Total</Text>
                     </HStack>
                   </StatLabel>
@@ -364,19 +364,19 @@ export const Configuracoes = () => {
                 </Text>
                 <VStack align="start" spacing={1} pl={4}>
                   <HStack>
-                    <Icon as={Users} size={16} color="red.500" />
+                    <Icon as={Users} boxSize={4} color="red.500" />
                     <Text fontSize="sm">• Todos os funcionários</Text>
                   </HStack>
                   <HStack>
-                    <Icon as={Settings} size={16} color="red.500" />
+                    <Icon as={Settings} boxSize={4} color="red.500" />
                     <Text fontSize="sm">• Todos os serviços</Text>
                   </HStack>
                   <HStack>
-                    <Icon as={DollarSign} size={16} color="red.500" />
+                    <Icon as={DollarSign} boxSize={4} color="red.500" />
                     <Text fontSize="sm">• Todas as movimentações financeiras</Text>
                   </HStack>
                   <HStack>
-                    <Icon as={Calendar} size={16} color="red.500" />
+                    <Icon as={Calendar} boxSize={4} color="red.500" />
                     <Text fontSize="sm">• Todos os agendamentos</Text>
                   </HStack>
                 </VStack>

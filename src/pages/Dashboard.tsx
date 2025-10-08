@@ -49,6 +49,17 @@ export const Dashboard = () => {
   const borderColor = useColorModeValue('neutral.200', 'gray.600');
   const selectBg = useColorModeValue('white', 'gray.700');
   const cardBg = useColorModeValue('white', 'gray.800');
+  const cardBorderColor = useColorModeValue('neutral.100', 'gray.600');
+  const statLabelColor = useColorModeValue('neutral.600', 'gray.400');
+  const statNumberColor = useColorModeValue('neutral.800', 'gray.100');
+  const mutedTextColor = useColorModeValue('neutral.500', 'gray.500');
+  
+  // Cores para cards específicos
+  const blueBg = useColorModeValue('blue.50', 'blue.900');
+  const greenBg = useColorModeValue('green.50', 'green.900');
+  const purpleBg = useColorModeValue('purple.50', 'purple.900');
+  const orangeBg = useColorModeValue('orange.50', 'orange.900');
+  const grayListBg = useColorModeValue('gray.50', 'gray.700');
 
   // Opções de período
   const periodos = [
@@ -62,9 +73,6 @@ export const Dashboard = () => {
     const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     return diasSemana[data.getDay()];
   };
-  const cardBorderColor = useColorModeValue('neutral.100', 'gray.600');
-  const statLabelColor = useColorModeValue('neutral.600', 'gray.400');
-  const statNumberColor = useColorModeValue('neutral.800', 'gray.100');
 
   const carregarDadosDashboard = async () => {
     try {
@@ -354,16 +362,16 @@ export const Dashboard = () => {
     <Box>
       <VStack align="stretch" spacing={6}>
         {/* Cabeçalho */}
-        <HStack justify="space-between" align="center">
+        <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
           <VStack align="start" spacing={1}>
-            <Heading size="lg" color={headingColor}>
+            <Heading size={{ base: 'md', md: 'lg' }} color={headingColor}>
               Dashboard Financeiro
             </Heading>
-            <Text color={textColor}>
+            <Text color={textColor} fontSize={{ base: 'sm', md: 'md' }}>
               Visão geral das finanças e operações
             </Text>
           </VStack>
-          <HStack spacing={4}>
+          <HStack spacing={{ base: 2, md: 4 }} flexWrap="wrap">
             <Button
               leftIcon={<RepeatIcon />}
               variant="outline"
@@ -371,17 +379,19 @@ export const Dashboard = () => {
               onClick={carregarDadosDashboard}
               isLoading={loading}
               loadingText="Atualizando..."
-              size="sm"
+              size={{ base: 'sm', md: 'sm' }}
             >
-              Atualizar
+              <Text display={{ base: 'none', md: 'block' }}>Atualizar</Text>
             </Button>
             <Select
               value={periodo}
               onChange={(e) => setPeriodo(e.target.value)}
-              w="200px"
+              w={{ base: '140px', md: '200px' }}
+              size={{ base: 'sm', md: 'md' }}
               bg={selectBg}
               color={headingColor}
               borderColor={borderColor}
+              display={{ base: 'none', md: 'block' }}
               _hover={{
                 borderColor: 'brand.300'
               }}
@@ -396,14 +406,16 @@ export const Dashboard = () => {
               onClick={handleExportPDF}
               isLoading={exportingPDF}
               loadingText="Exportando..."
+              size={{ base: 'sm', md: 'md' }}
             >
-              Exportar PDF
+              <Text display={{ base: 'none', md: 'block' }}>Exportar PDF</Text>
+              <Text display={{ base: 'block', md: 'none' }}>PDF</Text>
             </Button>
           </HStack>
         </HStack>
 
         {/* Cards de Estatísticas */}
-        <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} spacing={6}>
+        <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: 4, md: 6 }}>
           {statsCards.map((stat) => (
             <Card
               key={stat.label}
@@ -418,28 +430,28 @@ export const Dashboard = () => {
               }}
               transition="all 0.3s ease"
             >
-              <CardBody>
-                <HStack spacing={4}>
+              <CardBody p={{ base: 4, md: 6 }}>
+                <HStack spacing={{ base: 3, md: 4 }}>
                   <Box
-                    w={12}
-                    h={12}
+                    w={{ base: 10, md: 12 }}
+                    h={{ base: 10, md: 12 }}
                     bg={`${stat.color}.500`}
                     borderRadius="xl"
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
                   >
-                    <Icon as={stat.icon} w={6} h={6} color="white" />
+                    <Icon as={stat.icon} w={{ base: 5, md: 6 }} h={{ base: 5, md: 6 }} color="white" />
                   </Box>
-                  <VStack align="start" spacing={1} flex={1}>
+                  <VStack align="start" spacing={1} flex={1} minW={0}>
                     <Stat>
-                      <StatLabel fontSize="sm" color={statLabelColor}>
+                      <StatLabel fontSize={{ base: 'xs', md: 'sm' }} color={statLabelColor} noOfLines={1}>
                         {stat.label}
                       </StatLabel>
-                      <StatNumber fontSize="2xl" fontWeight="bold" color={statNumberColor}>
+                      <StatNumber fontSize={{ base: 'lg', md: '2xl' }} fontWeight="bold" color={statNumberColor} noOfLines={1}>
                         {stat.value}
                       </StatNumber>
-                      <StatHelpText mb={0}>
+                      <StatHelpText mb={0} fontSize={{ base: 'xs', md: 'sm' }}>
                         <StatArrow type={stat.change >= 0 ? 'increase' : 'decrease'} />
                         {Math.abs(stat.change).toFixed(1)}% vs período anterior
                       </StatHelpText>
@@ -451,25 +463,100 @@ export const Dashboard = () => {
           ))}
         </SimpleGrid>
 
-        {/* Gráfico de Faturamento */}
-        <SimpleGrid columns={{ base: 1, lg: 1 }} spacing={6}>
-          <Card bg={cardBg} p={6} borderRadius="xl" shadow="sm" borderColor={cardBorderColor}>
+        {/* Gráfico de Faturamento - Desktop | Cards Resumo - Mobile */}
+        <SimpleGrid columns={{ base: 1, lg: 1 }} spacing={{ base: 4, md: 6 }}>
+          <Card bg={cardBg} p={{ base: 4, md: 6 }} borderRadius="xl" shadow="sm" borderColor={cardBorderColor}>
             <VStack spacing={4} align="stretch">
-              <HStack justify="space-between" align="center">
+              <HStack justify="space-between" align="center" flexWrap="wrap" gap={2}>
                 <HStack spacing={3}>
                   <Icon as={BarChart3} w={5} h={5} color="brand.500" />
-                  <Heading size="md" color={headingColor}>
+                  <Heading size={{ base: 'sm', md: 'md' }} color={headingColor}>
                     Faturamento por {periodo === '7' ? 'Dia' : periodo === '30' ? 'Dia' : 'Semana'}
                   </Heading>
                 </HStack>
-                <Text fontSize="sm" color={textColor}>
+                <Text fontSize={{ base: 'xs', md: 'sm' }} color={textColor}>
                   {periodos.find(p => p.value === periodo)?.label}
                 </Text>
               </HStack>
               
-              <Box h="300px" w="full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              {/* Versão Mobile - Cards Resumo */}
+              <Box display={{ base: 'block', md: 'none' }}>
+                <SimpleGrid columns={2} spacing={3}>
+                  <Card bg={blueBg} p={3}>
+                    <VStack spacing={1}>
+                      <Text fontSize="xs" color={textColor}>Maior Dia</Text>
+                      <Text fontSize="lg" fontWeight="bold" color="blue.600">
+                        R$ {Math.max(...chartData.map(d => d.faturamento || 0)).toLocaleString()}
+                      </Text>
+                      <Text fontSize="xs" color={mutedTextColor}>
+                        {chartData.find(d => d.faturamento === Math.max(...chartData.map(d => d.faturamento || 0)))?.day}
+                      </Text>
+                    </VStack>
+                  </Card>
+                  
+                  <Card bg={greenBg} p={3}>
+                    <VStack spacing={1}>
+                      <Text fontSize="xs" color={textColor}>Média Diária</Text>
+                      <Text fontSize="lg" fontWeight="bold" color="green.600">
+                        R$ {chartData.length > 0 ? Math.round(chartData.reduce((sum, d) => sum + (d.faturamento || 0), 0) / chartData.length).toLocaleString() : '0'}
+                      </Text>
+                      <Text fontSize="xs" color={mutedTextColor}>
+                        {chartData.length} dias
+                      </Text>
+                    </VStack>
+                  </Card>
+                  
+                  <Card bg={purpleBg} p={3}>
+                    <VStack spacing={1}>
+                      <Text fontSize="xs" color={textColor}>Total</Text>
+                      <Text fontSize="lg" fontWeight="bold" color="purple.600">
+                        R$ {chartData.reduce((sum, d) => sum + (d.faturamento || 0), 0).toLocaleString()}
+                      </Text>
+                      <Text fontSize="xs" color={mutedTextColor}>
+                        Período
+                      </Text>
+                    </VStack>
+                  </Card>
+                  
+                  <Card bg={orangeBg} p={3}>
+                    <VStack spacing={1}>
+                      <Text fontSize="xs" color={textColor}>Dias Ativos</Text>
+                      <Text fontSize="lg" fontWeight="bold" color="orange.600">
+                        {chartData.filter(d => (d.faturamento || 0) > 0).length}
+                      </Text>
+                      <Text fontSize="xs" color={mutedTextColor}>
+                        de {chartData.length}
+                      </Text>
+                    </VStack>
+                  </Card>
+                </SimpleGrid>
+                
+                {/* Lista dos últimos dias - Mobile */}
+                <Box mt={4}>
+                  <Text fontSize="sm" fontWeight="bold" mb={2} color={headingColor}>
+                    Últimos 7 dias
+                  </Text>
+                  <VStack spacing={2}>
+                    {chartData.slice(-7).reverse().map((dia, index) => (
+                      <HStack key={index} justify="space-between" w="full" p={2} bg={grayListBg} borderRadius="md">
+                        <Text fontSize="sm" color={textColor}>{dia.day}</Text>
+                        <Text fontSize="sm" fontWeight="bold" color={dia.faturamento > 0 ? 'green.600' : 'gray.400'}>
+                          R$ {(dia.faturamento || 0).toLocaleString()}
+                        </Text>
+                      </HStack>
+                    ))}
+                  </VStack>
+                </Box>
+              </Box>
+
+              {/* Versão Desktop - Gráfico Completo */}
+              <Box h={{ base: "350px", md: "400px" }} w="full" overflowX="auto" display={{ base: 'none', md: 'block' }}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={chartData.length * 60 + 100}>
+                  <BarChart 
+                    data={chartData} 
+                    margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                    barCategoryGap="20%"
+                  >
                     <defs>
                       <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#E8B4CB" />
@@ -479,15 +566,22 @@ export const Dashboard = () => {
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                     <XAxis 
                       dataKey="day" 
-                      fontSize={12}
+                      fontSize={11}
                       tickLine={false}
                       axisLine={false}
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      tick={{ fill: textColor }}
                     />
                     <YAxis
-                      fontSize={12}
+                      fontSize={11}
                       tickLine={false}
                       axisLine={false}
                       tickFormatter={(value) => `R$ ${value}`}
+                      tick={{ fill: textColor }}
+                      width={80}
                     />
                     <Tooltip
                       formatter={(value: any) => [`R$ ${value.toLocaleString()}`, 'Faturamento']}
