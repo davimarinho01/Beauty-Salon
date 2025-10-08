@@ -28,7 +28,6 @@ import {
   AlertTitle,
   AlertDescription,
   useBreakpointValue,
-  SimpleGrid,
   Divider,
 } from '@chakra-ui/react'
 import {

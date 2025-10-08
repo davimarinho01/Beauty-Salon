@@ -30,8 +30,7 @@ import {
   Alert,
   AlertIcon,
   useToast,
-  useBreakpointValue,
-  Divider
+  useBreakpointValue
 } from '@chakra-ui/react';
 import { 
   FaChartLine, 

@@ -23,7 +23,6 @@ import {
   GridItem,
   useColorModeValue,
   useBreakpointValue,
-  Collapse,
   Flex,
   Wrap,
   WrapItem,
